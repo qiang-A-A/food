@@ -44,7 +44,19 @@ export function Carousel({ slides, autoMs = 6000 }: CarouselProps) {
   if (slides.length === 0) return null
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden', background: '#3A0B0F' }} aria-roledescription="轮播">
+    <div
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        background: '#3A0B0F',
+        // 关键：容器必须有显式高度，否则 absolute 定位的 slide 撑不起容器（轮播塌陷不可见）
+        height: 480,
+      }}
+      className="carousel"
+      aria-roledescription="轮播"
+    >
+      {/* 移动端降低轮播高度 */}
+      <style>{`@media (max-width: 768px){ .carousel{ height: 340px !important; } }`}</style>
       {/* 当前轮播内容（opacity 过渡 .8s，UI/UX §6.2） */}
       {slides.map((s, i) => (
         <div

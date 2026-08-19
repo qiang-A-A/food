@@ -3,9 +3,11 @@
 // -----------------------------------------------------------------------------
 // 功能：左图区（产品实拍图/礼盒包装图 Tab + 缩略图切换）右信息区（产品编号/
 //       所属系列/金色分隔线/规格参数表/食品合规字段/富文本描述）→
-//       权限双态 CTA（未登录「登录后可预约/咨询」→ 登录弹窗 → 回跳打开意向
-//       弹窗；已登录「立即预约/咨询顾问」→ 直接打开意向弹窗，source=product）。
-// 数据：GET /api/public/products/{id}；意向提交 POST /api/user/intents。
+//       三个 CTA（权限双态）：
+//        · 立即预约 / 提交意向 → 意向表单弹窗（source=product）
+//        · 咨询顾问 → 在线聊天弹窗（携带 product_id，后台会话展示来源产品）
+// 数据：GET /api/public/products/{id}；意向提交 POST /api/user/intents；
+//       聊天 GET/POST /api/user/messages。
 // =============================================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -14,10 +16,10 @@ import { useParams } from 'react-router-dom'
 import { http } from '@/api/http'
 import { publicApi } from '@tsgq/api-client'
 import { ProductPlaceholder } from '@/assets/symbols'
+import { ChatWidget } from '@/components/ChatWidget'
 import { IntentForm } from '@/components/IntentForm'
 import { PermissionCTA } from '@/components/PermissionCTA'
 import { RichText } from '@/components/RichText'
-import { useUiStore } from '@/store/ui'
 
 // 产品详情数据结构
 interface ProductDetail {
@@ -49,7 +51,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState<ProductDetail | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [intentOpen, setIntentOpen] = useState(false)  // 意向弹窗开关
-  const showToast = useUiStore((s) => s.showToast)
+  const [chatOpen, setChatOpen] = useState(false)      // 咨询聊天弹窗开关
 
   // 加载产品详情
   useEffect(() => {
@@ -180,7 +182,7 @@ export default function ProductDetail() {
           )}
 
           {/* ===== 权限双态 CTA（UI/UX §6.5） ===== */}
-          <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+          <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
             {/* 立即预约：未登录「登录后可预约」→ 登录后回跳打开意向弹窗 */}
             <PermissionCTA
               guestLabel="登录后可预约"
@@ -188,13 +190,21 @@ export default function ProductDetail() {
               onLoggedIn={() => setIntentOpen(true)}
               onGuestReturn={() => setIntentOpen(true)}  // 登录成功后自动展开（回跳原操作）
             />
-            {/* 咨询顾问 */}
+            {/* 提交意向：打开意向表单弹窗（source=product，原「咨询顾问」按需求改名） */}
+            <PermissionCTA
+              guestLabel="登录后可提交意向"
+              userLabel="提交意向"
+              variant="ghost"
+              onLoggedIn={() => setIntentOpen(true)}
+              onGuestReturn={() => setIntentOpen(true)}
+            />
+            {/* 咨询顾问：新增 → 打开在线聊天弹窗（携带本产品 id，后台可溯源） */}
             <PermissionCTA
               guestLabel="登录后可咨询"
               userLabel="咨询顾问"
               variant="ghost"
-              onLoggedIn={() => { setIntentOpen(true); showToast('ok', '填写需求后顾问将尽快联系您') }}
-              onGuestReturn={() => setIntentOpen(true)}
+              onLoggedIn={() => setChatOpen(true)}
+              onGuestReturn={() => setChatOpen(true)}
             />
           </div>
         </div>
@@ -217,6 +227,10 @@ export default function ProductDetail() {
             </div>
           </div>
         </div>
+      )}
+      {/* ===== 咨询聊天弹窗（产品详情页打开，携带来源产品 id） ===== */}
+      {chatOpen && (
+        <ChatWidget productId={Number(id)} onClose={() => setChatOpen(false)} />
       )}
     </div>
   )

@@ -483,3 +483,47 @@ class SiteSettingsIn(BaseModel):
     """站点设置（P2，可延后）：网站标题/品牌标语。"""
     site_title: str | None = None
     site_slogan: str | None = None
+
+
+# ============================================================
+# 消息域（前台用户 ⇄ 后台管理员聊天）
+# ============================================================
+
+class MessageIn(BaseModel):
+    """发送聊天消息请求：内容必填，product_id 可选（来源产品）。"""
+    content: str = Field(..., min_length=1, max_length=1000, description="消息内容（纯文本）")
+    product_id: int | None = Field(None, description="发起来源产品（产品详情页咨询时携带）")
+
+
+class MessageOut(BaseModel):
+    """聊天消息输出（用户侧与后台侧共用）。"""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    user_id: int | None = None
+    product_id: int | None = None
+    sender: str            # user / admin
+    admin_id: int | None = None
+    admin_name: str | None = None   # 回复管理员姓名（后台展示）
+    content: str
+    is_read_admin: bool = False
+    is_read_user: bool = False
+    created_at: datetime
+
+
+class ConversationOut(BaseModel):
+    """后台会话列表项：每用户一条，含最新消息/未读数/来源产品。"""
+    user_id: int
+    user_nickname: str | None = None
+    user_phone: str | None = None
+    user_avatar: str | None = None
+    last_message: str | None = None     # 最近一条消息内容（预览）
+    last_sender: str | None = None      # 最近消息方向
+    last_time: datetime | None = None   # 最近消息时间
+    unread: int = 0                     # 管理员侧未读数（角标来源）
+    product_id: int | None = None       # 最近消息来源产品
+    product_name: str | None = None     # 来源产品名（列表展示）
+
+
+class UnreadOut(BaseModel):
+    """未读消息数输出（角标）。"""
+    count: int

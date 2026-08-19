@@ -7,17 +7,18 @@
 // 交互：手风琴展开（默认仅产品管理展开）、选中高亮、折叠时图标模式。
 // =============================================================================
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   AppstoreOutlined, BlockOutlined, ClusterOutlined, DashboardOutlined,
   FileTextOutlined, FolderOutlined, GiftOutlined, IdcardOutlined,
-  InfoCircleOutlined, PictureOutlined, SettingOutlined, ShoppingCartOutlined,
-  TeamOutlined, UserOutlined,
+  InfoCircleOutlined, MessageOutlined, PictureOutlined, SettingOutlined,
+  ShoppingCartOutlined, TeamOutlined, UserOutlined,
 } from '@ant-design/icons'
-import { Avatar, Breadcrumb, Button, Drawer, Dropdown, Layout, Menu, Typography } from 'antd'
+import { Avatar, Badge, Breadcrumb, Button, Drawer, Dropdown, Layout, Menu, Typography } from 'antd'
 
 import { useAdminAuthStore } from '@/store/auth'
+import { useMessagesStore } from '@/store/messages'
 
 const { Header, Sider, Content } = Layout
 
@@ -27,7 +28,8 @@ const FRONTEND_URL =
     ? `${window.location.protocol}//${window.location.hostname}:5173/`
     : '/'
 
-// ---- 12 项一级菜单定义（与方案 §4.2 已确认结构一致）----
+// ---- 13 项一级菜单定义（含消息管理，与方案 §4.2 结构一致）----
+// 消息管理菜单项在渲染时动态注入未读角标（useMessagesStore.unread）
 const MENU_ITEMS = [
   { key: 'dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
   {
@@ -61,6 +63,7 @@ const MENU_ITEMS = [
       { key: '/admin/about/selling-points', label: '核心卖点' },
     ],
   },
+  { key: 'messages', icon: <MessageOutlined />, label: '消息管理' },  // 未读角标在渲染时注入
   { key: 'intents', icon: <ShoppingCartOutlined />, label: '团购意向管理' },
   { key: 'users', icon: <TeamOutlined />, label: '用户管理' },
   { key: 'admins', icon: <IdcardOutlined />, label: '管理员管理' },
@@ -78,18 +81,38 @@ const MENU_ITEMS = [
 // 一级 key → 中文名（面包屑显示）
 const KEY_TITLES: Record<string, string> = {
   dashboard: '仪表盘', products: '产品管理', categories: '系列管理', news: '新闻管理',
-  banners: '轮播图管理', about: '关于我们', intents: '团购意向管理', users: '用户管理',
-  admins: '管理员管理', departments: '部门管理', roles: '角色管理', settings: '系统设置',
+  banners: '轮播图管理', about: '关于我们', messages: '消息管理', intents: '团购意向管理',
+  users: '用户管理', admins: '管理员管理', departments: '部门管理', roles: '角色管理',
+  settings: '系统设置',
 }
 
 export function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { admin, logout } = useAdminAuthStore()
+  const unread = useMessagesStore((s) => s.unread)
+  const refreshUnread = useMessagesStore((s) => s.refresh)
 
   const [collapsed, setCollapsed] = useState(false)  // 侧栏折叠
   const [openKeys, setOpenKeys] = useState<string[]>(['products']) // 默认仅产品展开
   const [drawerOpen, setDrawerOpen] = useState(false) // 移动端抽屉
+
+  // 消息未读角标：挂载即拉取 + 每 10 秒轮询（打开会话后 Messages 页会主动 refresh）
+  useEffect(() => {
+    refreshUnread()
+    const timer = setInterval(refreshUnread, 10_000)
+    return () => clearInterval(timer)
+  }, [refreshUnread])
+
+  // 菜单项注入未读角标：消息管理 label 包 Badge（count=0 时 AntD 自动隐藏角标）
+  const menuItems = useMemo(() =>
+    MENU_ITEMS.map((item) =>
+      item.key === 'messages'
+        ? { ...item, label: <Badge count={unread} size="small" offset={[10, 0]} style={{ background: '#8C1F28' }}>消息管理</Badge> }
+        : item
+    ),
+    [unread]
+  )
 
   // 当前选中项（路由路径 → 反查一级 key 用于高亮）
   const selectedKeys = useMemo(() => {
@@ -159,7 +182,7 @@ export function AdminLayout() {
   const siderContent = (
     <Menu
       mode="inline"
-      items={MENU_ITEMS}
+      items={menuItems}
       selectedKeys={selectedKeys}
       openKeys={collapsed ? undefined : openKeys}  // 折叠时不控制展开（AntD 自动处理）
       onOpenChange={onOpenChange}

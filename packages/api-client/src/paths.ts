@@ -25,6 +25,8 @@ export const userApi = {
   password: '/api/user/password',              // 修改密码
   avatar: '/api/user/avatar',                  // 修改头像（上传/默认头像库）
   intents: '/api/user/intents',                // 我的意向（GET/POST）
+  messages: '/api/user/messages',              // 我的聊天记录（GET/POST）
+  messagesUnread: '/api/user/messages/unread', // 我的未读消息数
 }
 
 /** 超管认证接口——对应方案 §6.2 auth 组 */
@@ -46,6 +48,9 @@ export const adminApi = {
   banners: '/api/admin/banners',               // 轮播图管理
   about: '/api/admin/about',                   // 关于我们更新
   intents: '/api/admin/intents',               // 团购意向管理
+  messages: '/api/admin/messages',             // 消息管理（会话/聊天/回复）
+  messagesConversations: '/api/admin/messages/conversations', // 会话列表
+  messagesUnread: '/api/admin/messages/unread-count',         // 未读总数（角标）
   users: '/api/admin/users',                   // 注册用户管理
   admins: '/api/admin/admins',                 // 管理员管理
   departments: '/api/admin/departments',       // 部门管理

@@ -16,6 +16,7 @@ from app.models.news import News
 from app.models.banner import Banner
 from app.models.about import About
 from app.models.setting import Setting
+from app.models.chat import ChatMessage
 
 __all__ = [
     "User",
@@ -29,4 +30,5 @@ __all__ = [
     "Banner",
     "About",
     "Setting",
+    "ChatMessage",
 ]

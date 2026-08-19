@@ -1,17 +1,19 @@
 // =============================================================================
 // src/pages/Profile.tsx — 个人中心（PRD F-6）
 // -----------------------------------------------------------------------------
-// 功能：左侧资料卡（头像/昵称/手机号）+ 三导航（个人资料/修改密码/我的意向/
-//       退出登录）；右侧内容区——资料编辑（昵称/手机号）、头像修改（上传本地
-//       图片 ≤2MB 或 6 款默认头像库）、修改密码、我的意向列表。
+// 功能：左侧资料卡（头像/昵称/手机号）+ 四导航（个人资料/修改头像/修改密码/
+//       我的意向/消息记录/退出登录）；右侧内容区——资料编辑（昵称/手机号）、
+//       头像修改（上传本地图片 ≤2MB 或 6 款默认头像库）、修改密码、我的意向
+//       列表、消息记录（与顾问的在线聊天，3 秒轮询）。
 // 数据：GET/PUT /api/user/profile、PUT /api/user/password、POST /api/user/avatar、
-//       GET /api/user/intents。本页需登录（ProfileGuard 守卫）。
+//       GET /api/user/intents、GET/POST /api/user/messages。本页需登录守卫。
 // =============================================================================
 
 import { useEffect, useRef, useState } from 'react'
 
 import { http } from '@/api/http'
 import { userApi } from '@tsgq/api-client'
+import { ChatPanel } from '@/components/ChatPanel'
 import { useAuthStore } from '@/store/auth'
 import { useUiStore } from '@/store/ui'
 import { PageBanner } from '@/components/PageBanner'
@@ -32,7 +34,7 @@ interface MyIntent { id: number; name: string; phone: string; company: string | 
 // 状态文案映射（后台同义，前台展示）
 const STATUS_TEXT: Record<string, string> = { pending: '待跟进', contacted: '已联系', deal: '已成交', closed: '已关闭' }
 
-type Tab = 'info' | 'avatar' | 'password' | 'intents'
+type Tab = 'info' | 'avatar' | 'password' | 'intents' | 'messages'
 
 export default function Profile() {
   const { nickname, setLogin, logout } = useAuthStore()
@@ -152,6 +154,7 @@ export default function Profile() {
                 ['avatar', '修改头像'],
                 ['password', '修改密码'],
                 ['intents', '我的意向'],
+                ['messages', '消息记录'],
               ] as [Tab, string][]).map(([k, label]) => (
                 <button key={k} onClick={() => setTab(k)} style={{ padding: '10px 0', border: 'none', borderBottom: tab === k ? '2px solid #8C1F28' : '1px solid var(--line)', background: 'none', color: tab === k ? '#8C1F28' : '#666', cursor: 'pointer', fontSize: 14, fontWeight: tab === k ? 600 : 400 }}>
                   {label}
@@ -228,6 +231,19 @@ export default function Profile() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </>
+            )}
+
+            {tab === 'messages' && (
+              <>
+                <Title>消息记录</Title>
+                <div style={{ fontSize: 13, color: 'var(--text-weak)', marginBottom: 12 }}>
+                  与在线顾问的聊天记录，新回复自动刷新（每 3 秒）
+                </div>
+                {/* 内嵌聊天面板：高度自适应（容器高度 420） */}
+                <div style={{ border: '1px solid var(--line)', borderRadius: 4, overflow: 'hidden' }}>
+                  <ChatPanel height={420} />
                 </div>
               </>
             )}

@@ -8,11 +8,12 @@
 from fastapi import APIRouter, Depends
 
 from app.auth.deps import get_current_admin
-from app.routers.admin import content, intents, products, system
+from app.routers.admin import content, intents, messages, products, system
 
 # 后台路由：全部子路由默认挂载管理员鉴权（防越权，开发技术文档 §10.2）
 router = APIRouter(dependencies=[Depends(get_current_admin)])
 router.include_router(products.router, prefix="/products", tags=["后台-产品管理"])
 router.include_router(content.router, tags=["后台-内容管理"])   # categories/news/banners/about 直接挂在 /api/admin 下
 router.include_router(intents.router, prefix="/intents", tags=["后台-团购意向"])
+router.include_router(messages.router, prefix="/messages", tags=["后台-消息管理"])
 router.include_router(system.router, tags=["后台-系统管理"])     # dashboard/users/admins/departments/roles/settings/upload

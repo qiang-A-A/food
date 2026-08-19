@@ -15,9 +15,9 @@ from app.auth.deps import get_current_user
 from app.auth.jwt import create_token
 from app.auth.password import hash_password, verify_password
 from app.database import get_db
-from app.models import PurchaseIntent, User
+from app.models import ChatMessage, PurchaseIntent, User
 from app.schemas import (
-    AvatarKeyIn, IntentIn, IntentOut, PasswordChangeIn,
+    AvatarKeyIn, IntentIn, IntentOut, MessageIn, MessageOut, PasswordChangeIn,
     UserLoginIn, UserLoginOut, UserOut, UserRegisterIn, UserUpdateIn,
 )
 from app.services.paginate import paginate
@@ -177,3 +177,79 @@ def create_intent(
     db.commit()
     db.refresh(intent)
     return ok({"id": intent.id, "status": "pending"}, "提交成功，顾问将尽快与您联系")
+
+
+# ---------------- 咨询消息（需登录，与后台管理员聊天） ----------------
+
+def msg_to_out(m: ChatMessage) -> MessageOut:
+    """聊天消息 ORM → 输出模型（管理员姓名用于前台展示回复人）。"""
+    return MessageOut.model_validate({
+        "id": m.id, "user_id": m.user_id, "product_id": m.product_id,
+        "sender": m.sender, "admin_id": m.admin_id,
+        "admin_name": m.admin.name if m.admin else None,
+        "content": m.content,
+        "is_read_admin": m.is_read_admin, "is_read_user": m.is_read_user,
+        "created_at": m.created_at,
+    })
+
+
+@router.get("/messages")
+def my_messages(
+    page: int = 1,
+    page_size: int = 50,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """我的聊天记录（倒序分页）：返回当前用户全部消息，并把管理员回复
+    标记为已读（用户打开聊天即视为已读，is_read_user → true）。"""
+    # 先标记已读：管理员发来的未读消息
+    db.query(ChatMessage).filter(
+        ChatMessage.user_id == user.id,
+        ChatMessage.sender == "admin",
+        ChatMessage.is_read_user.is_(False),
+    ).update({ChatMessage.is_read_user: True}, synchronize_session=False)
+    db.commit()
+    # 查询消息（倒序分页，前端反转展示为时间正序）
+    query = select(ChatMessage).where(ChatMessage.user_id == user.id)
+    data = paginate(db, query, page, page_size, order_by=ChatMessage.created_at.desc())
+    return ok({
+        "items": [msg_to_out(m) for m in data["items"]],
+        "total": data["total"], "page": data["page"],
+        "page_size": data["page_size"], "pages": data["pages"],
+    })
+
+
+@router.post("/messages", status_code=201)
+def send_message(
+    body: MessageIn,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """发送咨询消息（需登录）：方向为 user，管理员侧未读置 false 计入后台角标；
+    product_id 记录来源产品（产品详情页「咨询顾问」入口携带）。"""
+    msg = ChatMessage(
+        user_id=user.id,
+        product_id=body.product_id,
+        sender="user",
+        content=body.content.strip(),
+        is_read_admin=False,   # 发给管理员 → 管理员侧未读
+        created_by=str(user.id),
+    )
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+    return ok(msg_to_out(msg), "消息已发送")
+
+
+@router.get("/messages/unread")
+def my_unread_count(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """我的未读消息数（管理员回复未读，个人中心入口角标）。"""
+    count = db.query(ChatMessage).filter(
+        ChatMessage.user_id == user.id,
+        ChatMessage.sender == "admin",
+        ChatMessage.is_read_user.is_(False),
+    ).count()
+    return ok({"count": count})

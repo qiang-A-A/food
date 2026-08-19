@@ -74,6 +74,10 @@ if [ -z "$NPM_PATH" ]; then
   exit 1
 fi
 echo "  使用 npm: $NPM_PATH"
+# 关键：npm.cmd 内部执行 "npm run dev:xxx" 时会 spawn 内层 npm 子进程，
+# 该子进程不会继承绝对路径调用，只认 PATH —— 必须把 node 目录注入 PATH，
+# 否则出现 "'npm' 不是内部或外部命令"（外层成功、内层失败）
+export PATH="$(dirname "$NPM_PATH"):$PATH"
 
 # ---- 3. 清理旧端口进程 ----
 for port in 8000 5173 5174; do
@@ -101,18 +105,38 @@ echo "▶ 启动后台 (5174)…"
 "$NPM_PATH" run dev:admin > /tmp/tsgq-admin.log 2>&1 &
 ADMIN_PID=$!
 
-# ---- 6. 探活（更宽松的等待 + 失败明确标记）----
+# ---- 6. 探活（先等 10s；全部失败则再等 5s 重试一轮，防 vite 冷启动慢）----
+# 探活统一用后端 venv 的 Python（前置检查已保证存在）：
+# 避免 Windows 系统 curl 与 Git Bash curl 行为差异（System32\curl.exe
+# 不支持 /dev/null → CURLE_WRITE_ERROR 23 → set -e 提前退出）
+probe() {
+  FAILED=()
+  # 用 | 作分隔符：URL 含 :// 与 :，不能用 : 拆分（此前把 http 当 url 导致误判）
+  for entry in "8000|http://localhost:8000/api/health|后端" "5173|http://localhost:5173|前台" "5174|http://localhost:5174|后台"; do
+    port="${entry%%|*}"
+    rest="${entry#*|}"
+    url="${rest%%|*}"
+    name="${rest#*|}"
+    if "$PYTHON" -c "import sys,urllib.request
+try:
+    urllib.request.urlopen('$url', timeout=3); sys.exit(0)
+except Exception: sys.exit(1)" 2>/dev/null; then
+      code="200"
+    else
+      code="000"
+    fi
+    echo "  $name $url → HTTP $code"
+    if [ "$code" = "000" ]; then FAILED+=("$name(端口 $port)"); fi
+  done
+}
+
 sleep 10
-FAILED=()
-for entry in "8000:http://localhost:8000/api/health:后端" "5173:http://localhost:5173:前台" "5174:http://localhost:5174:后台"; do
-  port="${entry%%:*}"
-  rest="${entry#*:}"
-  url="${rest%%:*}"
-  name="${rest#*:}"
-  code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 "$url" 2>/dev/null || echo "000")
-  echo "  $name $url → HTTP $code"
-  if [ "$code" = "000" ]; then FAILED+=("$name(端口 $port，日志 /tmp/tsgq-${name// /-}.log)"); fi
-done
+probe
+if [ ${#FAILED[@]} -gt 0 ]; then
+  echo "  部分服务未就绪，再等 5 秒重试…"
+  sleep 5
+  probe
+fi
 
 echo ""
 if [ ${#FAILED[@]} -eq 0 ]; then
@@ -123,7 +147,7 @@ else
   echo "⚠ 以下服务启动失败："
   for f in "${FAILED[@]}"; do echo "   - $f"; done
   echo ""
-  echo "请查看对应日志排查（用 cat /tmp/tsgq-*.log）。"
-  echo "常见原因：npm 不在 PATH（用 NPM=绝对路径 重跑）/ 端口被占用 / Node 版本过低。"
+  echo "请查看对应日志排查：cat /tmp/tsgq-backend.log（后端）/ /tmp/tsgq-frontend.log（前台）/ /tmp/tsgq-admin.log（后台）"
+  echo "常见原因：npm 子进程找不到（本脚本已自动注入 PATH）/ 端口被占用 / Node 版本过低。"
   exit 1
 fi

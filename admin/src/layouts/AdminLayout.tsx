@@ -21,6 +21,12 @@ import { useAdminAuthStore } from '@/store/auth'
 
 const { Header, Sider, Content } = Layout
 
+// 前台官网地址（开发 5173 / 生产同域 /，后台为独立应用）
+const FRONTEND_URL =
+  window.location.port === '5174'
+    ? `${window.location.protocol}//${window.location.hostname}:5173/`
+    : '/'
+
 // ---- 12 项一级菜单定义（与方案 §4.2 已确认结构一致）----
 const MENU_ITEMS = [
   { key: 'dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
@@ -175,7 +181,15 @@ export function AdminLayout() {
         <Breadcrumb style={{ marginLeft: 16, fontSize: 12 }} items={[{ title: '首页' }, { title: crumbTitle }]} />
 
         {/* 管理员区 */}
-        <div style={{ marginLeft: 'auto' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* 前台官网入口（便于从后台退回前台） */}
+          <a
+            href={FRONTEND_URL}
+            style={{ fontSize: 13, color: '#8C1F28', textDecoration: 'none', borderBottom: '1px dashed #C9A96A' }}
+            title="返回前台官网"
+          >
+            前台官网 →
+          </a>
           <Dropdown menu={adminMenu} placement="bottomRight">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '0 8px' }}>
               <Avatar size={30} style={{ background: '#8C1F28' }} icon={<UserOutlined />} />

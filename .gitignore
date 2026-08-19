@@ -15,11 +15,18 @@ dist/
 __pycache__/
 *.py[cod]
 .venv/
+venv/
 *.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # ---- 环境与本地配置 ----
 .env
 .env.local
+.env.*
+!.env.example
+!.env.production.example
 
 # ---- 数据库文件（开发用 SQLite，不入库）----
 *.db

@@ -27,7 +27,7 @@ class Settings(BaseSettings):
 
     # ---- 数据库 ----
     # 开发默认 SQLite（相对 backend 运行目录）；生产用 PostgreSQL 连接串
-    DATABASE_URL: str = "sqlite:///./tsgq.db"
+    DATABASE_URL: str = "sqlite:///./tsgq_dev.db"
 
     # ---- 文件上传限制 ----
     UPLOAD_DIR: str = "./uploads"  # 上传文件根目录

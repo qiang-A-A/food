@@ -123,7 +123,7 @@ export default function News() {
       />
 
       {/* 新增/编辑弹窗（含富文本 + 视频） */}
-      <Modal title={editing ? `编辑新闻：${editing.title}` : '新增新闻'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} width={820} okText="保存" cancelText="取消" destroyOnClose>
+      <Modal title={editing ? `编辑新闻：${editing.title}` : '新增新闻'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} width={820} okText="保存" cancelText="取消" destroyOnHidden>
         <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
           <Form.Item name="title" label="标题" rules={[{ required: true, message: '请输入标题' }]}>
             <Input placeholder="新闻标题" />

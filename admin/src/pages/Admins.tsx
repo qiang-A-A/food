@@ -125,7 +125,7 @@ export default function Admins() {
         pagination={{ current: page, pageSize: PAGE_SIZE, total, onChange: setPage, showSizeChanger: false }}
       />
 
-      <Modal title={editing ? `编辑管理员：${editing.username}` : '新增管理员'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} okText="保存" cancelText="取消" width={560} destroyOnClose>
+      <Modal title={editing ? `编辑管理员：${editing.username}` : '新增管理员'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} okText="保存" cancelText="取消" width={560} destroyOnHidden>
         <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
             <Form.Item name="username" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>

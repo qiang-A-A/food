@@ -99,7 +99,7 @@ export default function Categories() {
       </div>
       <Table rowKey="id" loading={loading} columns={columns} dataSource={list} pagination={false} />
 
-      <Modal title={editing ? `编辑系列：${editing.name}` : '新增系列'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} okText="保存" cancelText="取消" destroyOnClose>
+      <Modal title={editing ? `编辑系列：${editing.name}` : '新增系列'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} okText="保存" cancelText="取消" destroyOnHidden>
         <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
           <Form.Item name="name" label="系列名称" rules={[{ required: true, message: '请输入名称' }]}>
             <Input placeholder="如 御点珍馐" />

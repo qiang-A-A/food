@@ -278,7 +278,7 @@ export default function Products() {
         width={760}
         okText="保存"
         cancelText="取消"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
           {/* 基本信息 */}

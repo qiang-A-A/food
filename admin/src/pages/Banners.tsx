@@ -98,7 +98,7 @@ export default function Banners() {
         ))}
       </div>
 
-      <Modal title={editing ? '编辑轮播图' : '上传轮播图'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} okText="保存" cancelText="取消" destroyOnClose>
+      <Modal title={editing ? '编辑轮播图' : '上传轮播图'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} okText="保存" cancelText="取消" destroyOnHidden>
         <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
           <Form.Item name="image" label="图片 URL" rules={[{ required: true, message: '请填写图片地址' }]} extra="通过上方上传获得 URL，或填 svg:hero-scene-N 占位">
             <Input placeholder="图片 URL" />

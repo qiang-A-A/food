@@ -1,0 +1,93 @@
+[
+  {
+    "name": "01-首页",
+    "url": "http://localhost:5173/",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "name": "02-产品列表",
+    "url": "http://localhost:5173/products",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "name": "03-产品详情",
+    "url": "http://localhost:5173/products/1",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "name": "04-新闻列表",
+    "url": "http://localhost:5173/news",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "name": "05-新闻详情",
+    "url": "http://localhost:5173/news/1",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "name": "06-关于我们",
+    "url": "http://localhost:5173/about",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "name": "07-礼盒定制",
+    "url": "http://localhost:5173/customize",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "name": "08-联系我们",
+    "url": "http://localhost:5173/contact",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "name": "09-登录页",
+    "url": "http://localhost:5173/login",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "name": "10-注册页",
+    "url": "http://localhost:5173/register",
+    "ok": true,
+    "errors": []
+  },
+  {
+    "name": "11a-后台登录页",
+    "url": "http://localhost:5174/admin/login",
+    "ok": true,
+    "errors": [
+      "[error] Warning: [antd: message] Static function can not consume context like dynamic theme. Please use 'App' component instead.",
+      "[error] Warning: [antd: Modal] `destroyOnClose` is deprecated. Please use `destroyOnHidden` instead."
+    ]
+  },
+  {
+    "name": "11-后台仪表盘",
+    "url": "http://localhost:5174/admin",
+    "ok": true,
+    "errors": [
+      "[error] Warning: [antd: Modal] `destroyOnClose` is deprecated. Please use `destroyOnHidden` instead."
+    ]
+  },
+  {
+    "name": "12-后台产品列表",
+    "url": "http://localhost:5174/admin/products",
+    "ok": true,
+    "errors": [
+      "[error] Warning: [antd: Modal] `destroyOnClose` is deprecated. Please use `destroyOnHidden` instead."
+    ]
+  },
+  {
+    "name": "13-后台团购意向",
+    "url": "http://localhost:5174/admin/intents",
+    "ok": true,
+    "errors": []
+  }
+]

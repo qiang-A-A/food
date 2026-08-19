@@ -82,7 +82,7 @@ export default function Roles() {
       </div>
       <Table rowKey="id" columns={columns} dataSource={list} pagination={false} />
 
-      <Modal title={editing ? '编辑角色' : '新增角色'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} okText="保存" cancelText="取消" destroyOnClose>
+      <Modal title={editing ? '编辑角色' : '新增角色'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} okText="保存" cancelText="取消" destroyOnHidden>
         <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
           <Form.Item name="role_name" label="角色名称" rules={[{ required: true, message: '请输入角色名称' }]}>
             <Input placeholder="如 运营编辑" />

@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.4.0",
+    "@tiptap/extension-image": "^3.30.2",
+    "@tiptap/extension-placeholder": "^3.30.2",
+    "@tiptap/react": "^3.30.2",
+    "@tiptap/starter-kit": "^3.30.2",
     "@tsgq/api-client": "file:../packages/api-client",
     "antd": "^5.20.0",
     "axios": "^1.7.4",

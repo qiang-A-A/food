@@ -1,47 +1,210 @@
 // =============================================================================
-// src/layouts/AdminLayout.tsx — 后台布局骨架（顶栏 + 侧栏 + 内容区）
+// src/layouts/AdminLayout.tsx — 后台框架布局（M5 完整版）
 // -----------------------------------------------------------------------------
-// 功能：后台整体框架（UI/UX §5.1）：56px 顶栏（Logo/面包屑/管理员）+ 224px
-//       手风琴侧栏 + 内容区。M5 阶段替换为完整实现（12 一级菜单/折叠/高亮）。
+// 功能：UI/UX §5.1 后台框架——顶栏 56px（折叠按钮/Logo/面包屑/管理员退出）
+//       + 侧栏 224px（12 项一级 / 19 路由手风琴菜单，可折叠 64px + 悬停浮层）
+//       + 内容区（#F5F5F5 / padding 20）。移动端（≤768px）侧栏变抽屉。
+// 交互：手风琴展开（默认仅产品管理展开）、选中高亮、折叠时图标模式。
 // =============================================================================
 
-import { Outlet } from 'react-router-dom' // 嵌套路由出口
-import { Layout, Menu, Typography } from 'antd' // AntD 布局组件
-import { DashboardOutlined, GiftOutlined } from '@ant-design/icons' // 图标（示意）
+import { useMemo, useState } from 'react'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import {
+  AppstoreOutlined, BlockOutlined, ClusterOutlined, DashboardOutlined,
+  FileTextOutlined, FolderOutlined, GiftOutlined, IdcardOutlined,
+  InfoCircleOutlined, PictureOutlined, SettingOutlined, ShoppingCartOutlined,
+  TeamOutlined, UserOutlined,
+} from '@ant-design/icons'
+import { Avatar, Breadcrumb, Button, Drawer, Dropdown, Layout, Menu, Typography } from 'antd'
+
+import { useAdminAuthStore } from '@/store/auth'
 
 const { Header, Sider, Content } = Layout
 
+// ---- 12 项一级菜单定义（与方案 §4.2 已确认结构一致）----
+const MENU_ITEMS = [
+  { key: 'dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
+  {
+    key: 'products', icon: <GiftOutlined />, label: '产品管理',
+    children: [
+      { key: '/admin/products', label: '产品列表' },
+      { key: '/admin/products/trash', label: '回收站' },
+    ],
+  },
+  {
+    key: 'categories', icon: <FolderOutlined />, label: '系列管理',
+    children: [
+      { key: '/admin/categories', label: '系列列表' },
+      { key: '/admin/categories/sort', label: '系列排序' },
+    ],
+  },
+  {
+    key: 'news', icon: <FileTextOutlined />, label: '新闻管理',
+    children: [
+      { key: '/admin/news', label: '新闻列表' },
+      { key: '/admin/news/trash', label: '回收站' },
+    ],
+  },
+  { key: 'banners', icon: <PictureOutlined />, label: '轮播图管理' },
+  {
+    key: 'about', icon: <InfoCircleOutlined />, label: '关于我们',
+    children: [
+      { key: '/admin/about/intro', label: '公司简介' },
+      { key: '/admin/about/story', label: '品牌故事' },
+      { key: '/admin/about/honors', label: '荣誉资质' },
+      { key: '/admin/about/selling-points', label: '核心卖点' },
+    ],
+  },
+  { key: 'intents', icon: <ShoppingCartOutlined />, label: '团购意向管理' },
+  { key: 'users', icon: <TeamOutlined />, label: '用户管理' },
+  { key: 'admins', icon: <IdcardOutlined />, label: '管理员管理' },
+  { key: 'departments', icon: <ClusterOutlined />, label: '部门管理' },
+  { key: 'roles', icon: <BlockOutlined />, label: '角色管理' },
+  {
+    key: 'settings', icon: <SettingOutlined />, label: '系统设置',
+    children: [
+      { key: '/admin/settings/contact', label: '联系方式' },
+      { key: '/admin/settings/site', label: '站点设置' },
+    ],
+  },
+]
+
+// 一级 key → 中文名（面包屑显示）
+const KEY_TITLES: Record<string, string> = {
+  dashboard: '仪表盘', products: '产品管理', categories: '系列管理', news: '新闻管理',
+  banners: '轮播图管理', about: '关于我们', intents: '团购意向管理', users: '用户管理',
+  admins: '管理员管理', departments: '部门管理', roles: '角色管理', settings: '系统设置',
+}
+
 export function AdminLayout() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { admin, logout } = useAdminAuthStore()
+
+  const [collapsed, setCollapsed] = useState(false)  // 侧栏折叠
+  const [openKeys, setOpenKeys] = useState<string[]>(['products']) // 默认仅产品展开
+  const [drawerOpen, setDrawerOpen] = useState(false) // 移动端抽屉
+
+  // 当前选中项（路由路径 → 反查一级 key 用于高亮）
+  const selectedKeys = useMemo(() => {
+    const path = location.pathname
+    for (const item of MENU_ITEMS) {
+      if (item.children?.some((c) => c.key === path)) return [path]
+      if (path === `/admin/${item.key}` || (item.key === 'dashboard' && path === '/admin')) {
+        return [item.key]
+      }
+    }
+    return []
+  }, [location.pathname])
+
+  // 面包屑：定位当前一级菜单名
+  const crumbTitle = useMemo(() => {
+    const path = location.pathname
+    const find = (items: typeof MENU_ITEMS): string | null => {
+      for (const item of items) {
+        if (item.children) {
+          const child = item.children.find((c) => c.key === path)
+          if (child) return `${KEY_TITLES[item.key]} / ${child.label}`
+          const sub = find(item.children as any)
+          if (sub) return sub
+        }
+        if (path === `/admin/${item.key}` || (item.key === 'dashboard' && path === '/admin')) {
+          return KEY_TITLES[item.key]
+        }
+      }
+      return null
+    }
+    return find(MENU_ITEMS) ?? '后台管理'
+  }, [location.pathname])
+
+  // 手风琴式展开：仅保留最后点击的父级
+  const onOpenChange = (keys: string[]) => {
+    setOpenKeys(keys.length ? [keys[keys.length - 1]] : [])
+  }
+
+  // 菜单点击：叶子节点跳路由；父级由 onOpenChange 控制展开
+  const onMenuClick: any = ({ key }: { key: string }) => {
+    if (key.startsWith('/admin/')) navigate(key)
+    setDrawerOpen(false)
+  }
+
+  // 退出登录
+  const handleLogout = () => {
+    logout()
+    navigate('/admin/login', { replace: true })
+  }
+
+  // 顶栏右侧：管理员头像 + 名称 + 下拉（退出）
+  const adminMenu = {
+    items: [
+      { key: 'logout', label: '退出登录', danger: true },
+    ],
+    onClick: ({ key }: { key: string }) => key === 'logout' && handleLogout(),
+  }
+
+  // 侧栏内容（桌面 Sider 与移动端 Drawer 共用）
+  const siderContent = (
+    <Menu
+      mode="inline"
+      items={MENU_ITEMS}
+      selectedKeys={selectedKeys}
+      openKeys={collapsed ? undefined : openKeys}  // 折叠时不控制展开（AntD 自动处理）
+      onOpenChange={onOpenChange}
+      onClick={onMenuClick}
+      inlineCollapsed={collapsed}
+      style={{ borderInlineEnd: 'none', background: '#fff' }}
+    />
+  )
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      {/* ---- 顶栏：56px 白底金边（Logo + 后台名 + 面包屑占位）---- */}
-      <Header style={{ background: '#fff', borderBottom: '1px solid #C9A96A', padding: '0 20px', display: 'flex', alignItems: 'center', gap: 12, height: 56, lineHeight: '56px' }}>
-        <Typography.Text strong style={{ color: '#6E161D', fontSize: 16, letterSpacing: 2 }}>
+      {/* ===== 顶栏：56px 白底金边 ===== */}
+      <Header style={{ background: '#fff', borderBottom: '1px solid #C9A96A', padding: '0 16px', display: 'flex', alignItems: 'center', gap: 12, height: 56, lineHeight: '56px', position: 'sticky', top: 0, zIndex: 10 }}>
+        {/* 折叠按钮（移动端为抽屉开关） */}
+        <Button
+          type="text"
+          icon={<AppstoreOutlined />}
+          onClick={() => (window.innerWidth <= 768 ? setDrawerOpen(true) : setCollapsed((c) => !c))}
+          aria-label="切换侧栏"
+        />
+        {/* Logo + 后台名（品牌点缀） */}
+        <Typography.Text strong style={{ color: '#6E161D', fontSize: 16, letterSpacing: 2, whiteSpace: 'nowrap' }}>
           天上宫阙 · 后台管理
         </Typography.Text>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          首页 / 仪表盘
-        </Typography.Text>
+        {/* 面包屑 */}
+        <Breadcrumb style={{ marginLeft: 16, fontSize: 12 }} items={[{ title: '首页' }, { title: crumbTitle }]} />
+
+        {/* 管理员区 */}
+        <div style={{ marginLeft: 'auto' }}>
+          <Dropdown menu={adminMenu} placement="bottomRight">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '0 8px' }}>
+              <Avatar size={30} style={{ background: '#8C1F28' }} icon={<UserOutlined />} />
+              <span style={{ fontSize: 13, color: '#333' }}>{admin?.name || admin?.username || '管理员'}</span>
+            </div>
+          </Dropdown>
+        </div>
       </Header>
 
       <Layout>
-        {/* ---- 侧栏：224px 白底，一级菜单示意（M5 完整 12 项手风琴）---- */}
-        <Sider width={224} style={{ background: '#fff', borderRight: '1px solid #E8E8E8' }}>
-          <Menu
-            mode="inline"
-            defaultSelectedKeys={['dashboard']}
-            style={{ borderInlineEnd: 'none' }}
-            items={[
-              { key: 'dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
-              { key: 'products', icon: <GiftOutlined />, label: '产品管理', children: [
-                { key: 'products', label: '产品列表' },
-                { key: 'products-trash', label: '回收站' },
-              ]},
-            ]}
-          />
+        {/* ===== 侧栏（桌面）：224px ↔ 64px 折叠 ===== */}
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
+          width={224}
+          collapsedWidth={64}
+          className="admin-sider"
+          style={{ background: '#fff', borderRight: '1px solid #E8E8E8', position: 'sticky', top: 56, height: 'calc(100vh - 56px)', overflow: 'auto' }}
+        >
+          {siderContent}
         </Sider>
 
-        {/* ---- 内容区：浅灰底 + 20px 内边距 ---- */}
+        {/* ===== 移动端抽屉侧栏 ===== */}
+        <Drawer placement="left" open={drawerOpen} onClose={() => setDrawerOpen(false)} width={224} styles={{ body: { padding: 0 } }}>
+          {siderContent}
+        </Drawer>
+
+        {/* ===== 内容区 ===== */}
         <Content style={{ background: '#F5F5F5' }}>
           <div className="admin-content">
             <Outlet />

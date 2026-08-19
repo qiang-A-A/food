@@ -33,3 +33,13 @@ body {
   padding-bottom: 8px;
   border-bottom: 2px solid #c9a96a; /* 金色底边线点缀 */
 }
+
+/* 桌面侧栏默认显示；≤768px 隐藏（改用抽屉） */
+.admin-sider {
+  display: block;
+}
+@media (max-width: 768px) {
+  .admin-sider {
+    display: none !important;
+  }
+}

@@ -33,7 +33,11 @@ venv/
 *.sqlite3
 
 # ---- 上传文件（仅保留目录占位）----
-uploads/*
+# 注意：uploads/** 写法实测无效（git 忽略语义差异），必须用标准目录忽略 +
+# 目录重新包含（!uploads/**/），否则深层子目录的上传文件会漏进 git add -A
+uploads/
+!uploads/.gitkeep
+!uploads/**/
 !uploads/**/.gitkeep
 
 # ---- 编辑器 / 系统 ----

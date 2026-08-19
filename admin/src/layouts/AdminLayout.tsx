@@ -128,9 +128,16 @@ export function AdminLayout() {
     setOpenKeys(keys.length ? [keys[keys.length - 1]] : [])
   }
 
-  // 菜单点击：叶子节点跳路由；父级由 onOpenChange 控制展开
+  // 菜单点击：叶子项跳路由（支持两类 key——二级完整路径 '/admin/xxx'、
+  // 一级短 key 'dashboard'/'banners' 等映射为 /admin/{key}；仪表盘为 /admin）
   const onMenuClick: any = ({ key }: { key: string }) => {
-    if (key.startsWith('/admin/')) navigate(key)
+    if (key.startsWith('/admin/')) {
+      navigate(key)
+    } else if (key === 'dashboard') {
+      navigate('/admin')
+    } else {
+      navigate(`/admin/${key}`)
+    }
     setDrawerOpen(false)
   }
 

@@ -1,0 +1,18 @@
+{
+  "name": "tsgq-official",
+  "version": "0.1.0",
+  "private": true,
+  "description": "天上宫阙 宫廷糕点企业官网（前台展示 + 后台管理）· FastAPI + React monorepo",
+  "workspaces": [
+    "frontend",
+    "admin",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:fe": "npm run dev --workspace=tsgq-frontend",
+    "dev:admin": "npm run dev --workspace=tsgq-admin",
+    "dev:be": "cd backend && .venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000",
+    "build:web": "npm run build --workspace=tsgq-frontend && npm run build --workspace=tsgq-admin",
+    "setup": "cd backend && .venv/Scripts/python.exe -m pip install -e \".[dev]\" && cd .. && npm install"
+  }
+}

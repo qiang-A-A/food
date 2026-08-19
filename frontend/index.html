@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!-- =========================================================================
+  index.html — 前台应用 HTML 入口
+  ---------------------------------------------------------------------------
+  功能：SPA 挂载点 + 全局基础 meta；页面标题由站点设置接口动态覆盖（M3 后）。
+  说明：使用系统字体栈回退（宋体/黑体），不依赖外部字体 CDN，保证离线可用。
+========================================================================== -->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- 移动端视口：禁止用户缩放，配合响应式断点（UI/UX §6.4） -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <title>天上宫阙 · 御礼天成</title>
+  </head>
+  <body>
+    <!-- React 挂载根节点 -->
+    <div id="root"></div>
+    <!-- 入口脚本：Vite 构建时自动注入 -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

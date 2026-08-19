@@ -1,0 +1,35 @@
+/* =============================================================================
+   src/styles/global.css — 后台全局样式（商务简约底 + 品牌点缀）
+   -----------------------------------------------------------------------------
+   功能：后台底色、内容区间距与基础排版；品牌点缀遵循 UI/UX §5.1-5.3。
+   说明：后台不使用前台纸感背景；整体白/浅灰底保证操作效率。
+   ============================================================================= */
+
+html,
+body,
+#root {
+  height: 100%; /* 撑满视口，保证侧栏布局高度 */
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #f5f5f5; /* 后台整体底色（UI/UX §3.1.4 --bg） */
+  color: #333;         /* 正文（对比度 ≈12.6:1） */
+}
+
+/* 内容区统一内边距（UI/UX §5.1：padding 20px） */
+.admin-content {
+  padding: 20px;
+}
+
+/* 页面标题：品牌点缀（深红标题 + 金色分隔线，克制使用） */
+.admin-page-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #6e161d; /* 深红：区块标题 */
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #c9a96a; /* 金色底边线点缀 */
+}

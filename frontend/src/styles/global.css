@@ -1,0 +1,164 @@
+/* =============================================================================
+   styles/global.css — 前台全局样式（宣纸纸感背景 + 基础元素规范）
+   -----------------------------------------------------------------------------
+   功能：实现 UI/UX §3.5.1 七层宣纸纸感背景（body/认证页共用）、字体与基础
+         元素默认样式，以及 §3.7.1 结构性红金元素（两侧红竖线/标题红菱）。
+   说明：纸感背景 7 层全部 background-attachment: fixed，避免滚动闪烁。
+   ============================================================================= */
+
+@import './tokens.css';
+
+/* ---- 基础重置与字体 ----
+   标题一律衬线宋体、正文一律黑体（UI/UX §3.2 禁混用）。 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth; /* 锚点平滑滚动 */
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--text);
+  background-color: var(--paper);
+  /* ---- 3.5.1 宣纸纸感背景（7 层叠加）---- */
+  background-image:
+    /* ⑦ 宣纸底色渐变：米白→浅宣纸→陈纸 */
+    linear-gradient(180deg, #f7f1de, #f2ead5, #eee4c8),
+    /* ⑥ 反向交叉纸纹（13°，淡纤维走向） */
+    repeating-linear-gradient(13deg, rgba(146, 116, 74, 0.013) 0 2px, transparent 2px 6px),
+    /* ⑤ 主纸纹（103°，纤维走向） */
+    repeating-linear-gradient(103deg, rgba(146, 116, 74, 0.02) 0 2px, transparent 2px 6px),
+    /* ④ 底部旧黄（陈年纸韵） */
+    radial-gradient(ellipse at 50% 100%, rgba(176, 146, 92, 0.12), transparent 65%),
+    /* ③ 顶部受光（纸面受光感） */
+    radial-gradient(ellipse at 50% 0%, rgba(255, 252, 242, 0.7), transparent 60%),
+    /* ② 粗纤维（纸浆絮状感，feTurbulence 等价噪点） */
+    repeating-linear-gradient(0deg, rgba(139, 112, 74, 0.05) 0 1px, transparent 1px 4px),
+    /* ① 细噪点（细腻纸纤维） */
+    repeating-linear-gradient(90deg, rgba(139, 112, 74, 0.05) 0 1px, transparent 1px 3px);
+  background-attachment: fixed; /* 固定背景，滚动不闪烁（UI/UX §3.5.1） */
+  background-size: auto;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased; /* 字体抗锯齿（Windows 清晰度优化） */
+}
+
+/* ---- 页面两侧结构性红竖线（UI/UX §3.7.1）
+   2px × 52vh 垂直居中，opacity .6；≤1180px 隐藏避免挤压内容 */
+main::before,
+main::after {
+  content: '';
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 52vh;
+  background: linear-gradient(180deg, var(--red), var(--red-3));
+  opacity: 0.6;
+  z-index: 0;
+  pointer-events: none; /* 不阻挡点击 */
+}
+main::before { left: 3vw; }
+main::after { right: 3vw; }
+@media (max-width: 1180px) {
+  main::before,
+  main::after { display: none; } /* 窄屏隐藏，避免干扰 */
+}
+
+/* ---- 内容容器：1200px 居中（UI/UX §3.3）---- */
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--container-pad);
+}
+
+/* ---- 区块标题规范（UI/UX §3.5.1 结构性红菱）
+   .cn 中文大标题前/后各一枚旋转 45° 红方块（金描边 + 红晕） */
+.section-title {
+  text-align: center;
+  padding: var(--section-gap) 0 8px;
+}
+.section-title .cn {
+  font-family: var(--font-title);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--red-3);
+}
+.section-title .cn::before,
+.section-title .cn::after {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: var(--red);
+  border: 1px solid var(--gold);
+  transform: rotate(45deg);
+  vertical-align: 4px;
+  box-shadow: 0 0 0 2px rgba(140, 31, 40, 0.12); /* 红晕 */
+}
+.section-title .cn::before { margin-right: 14px; }
+.section-title .cn::after { margin-left: 14px; }
+.section-title .en {
+  font-size: 12px;
+  letter-spacing: 6px;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+/* ---- 金色分隔线（UI/UX §3.8）：72px 渐变线 + 8px 红菱居中 ---- */
+.gold-divider {
+  width: 72px;
+  height: 1px;
+  margin: 14px auto;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  position: relative;
+}
+.gold-divider::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: var(--red);
+  border: 1px solid var(--gold);
+}
+
+/* ---- 图片金框 + 内红细边相框（UI/UX §3.7.2）
+   外边框 1px 金 + inset 6px 红细线，应用于产品卡/新闻卡/关于页图片 */
+.art-frame {
+  position: relative;
+  border: 1px solid var(--gold);
+}
+.art-frame::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(140, 31, 40, 0.5); /* 内红细边 */
+  pointer-events: none;
+}
+
+/* ---- 焦点可见性（UI/UX §7 无障碍）：输入框 focus 金色描边 + 阴影环 ---- */
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(201, 169, 106, 0.25);
+}
+
+/* ---- 尊重系统减弱动效（UI/UX §7）：关闭轮播/页面切换动画 ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

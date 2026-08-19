@@ -34,3 +34,6 @@ uploads/*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Vite 临时文件
+*.timestamp-*.mjs

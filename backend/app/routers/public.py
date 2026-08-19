@@ -6,6 +6,8 @@
 # 规则：产品仅返回 publish_status='on' 且未删除；新闻仅上架且未删除。
 # =============================================================================
 
+import re  # 标准库：摘要纯文本化（审计修复）
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload
@@ -75,7 +77,10 @@ def get_home(db: Session = Depends(get_db)):
         .all()
     )
     # 5) 品牌故事摘要（首页"关于我们预览"数据源）
-    about_brief = (about.brand_story or about.company_intro or "")[:100]
+    # 审计修复：富文本直接切片会截断 HTML 标签（如 <p> 截成 <p>），
+    # 先用 nh3 转纯文本（仅去标签，不做净化）再截断，保证首页展示干净摘要。
+    story_text = re.sub(r"<[^>]+>", "", about.brand_story or about.company_intro or "")
+    about_brief = (story_text.strip() or "")[:100]
 
     return ok({
         "banners": [BannerOut.model_validate(b) for b in banners],

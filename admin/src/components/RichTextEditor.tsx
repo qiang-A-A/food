@@ -41,12 +41,25 @@ const Iframe = Node.create({
   ],
 })
 
-/** 视频分享链接 → 可嵌入 iframe 地址（B站/腾讯；其他平台原样返回） */
-function toEmbedUrl(url: string): string {
-  // B站：https://www.bilibili.com/video/BVxxxx → //player.bilibili.com/player.html?bvid=...
-  const bili = url.match(/(?:bilibili\.com\/video\/)(BV[\w]+)/)
+/**
+ * 视频分享链接 → 可嵌入 iframe 地址（审计修复：与后端 sanitize_html 的
+ * ALLOWED_VIDEO_HOSTS 白名单严格对齐；非白名单平台返回 null 拒绝插入——
+ * 此前腾讯/优酷分享链接原样插入无法播放，且任意域名可入库）
+ */
+function toEmbedUrl(url: string): string | null {
+  const u = url.trim()
+  // 已是白名单嵌入域（player.bilibili.com / v.qq.com / player.youku.com）：原样放行
+  if (/^(?:https?:)?\/\/(?:player\.bilibili\.com|v\.qq\.com|player\.youku\.com)\//.test(u)) return u
+  // B站：https://www.bilibili.com/video/BVxxxx → player 嵌入
+  const bili = u.match(/(?:bilibili\.com\/video\/)(BV[\w]+)/)
   if (bili) return `//player.bilibili.com/player.html?bvid=${bili[1]}&page=1`
-  return url
+  // 腾讯视频：https://v.qq.com/x/page/xxxx.html → 播放器嵌入（vid 提取）
+  const qq = u.match(/(?:v\.qq\.com\/x\/page\/)([\w]+)(?:\.html)?/)
+  if (qq) return `//v.qq.com/txp/iframe/player.html?vid=${qq[1]}`
+  // 优酷：https://v.youku.com/v_show/id_xxxx.html → 播放器嵌入
+  const yk = u.match(/(?:v\.youku\.com\/v_show\/id_)([\w=]+)(?:\.html)?/)
+  if (yk) return `//player.youku.com/embed/${yk[1]}`
+  return null // 其他平台：拒绝（与后端白名单一致，防止任意域名 iframe 入库）
 }
 
 interface RichTextEditorProps {
@@ -99,6 +112,8 @@ export function RichTextEditor({ value, onChange, placeholder = '请输入内容
     const raw = videoUrlRef.current.trim()
     if (!raw) { message.warning('请输入视频链接'); return }
     const embed = toEmbedUrl(raw)
+    // 审计修复：非白名单平台拒绝插入（防止任意域名 iframe 入库并渲染到官网）
+    if (!embed) { message.error('仅支持 B站 / 腾讯视频 / 优酷 的分享链接'); return }
     editor?.chain().focus().insertContent(`<iframe src="${embed}"></iframe>`).run()
     setVideoOpen(false)
     videoUrlRef.current = ''

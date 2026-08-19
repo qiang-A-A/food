@@ -19,6 +19,7 @@ export function LoginModal() {
   const open = useUiStore((s) => s.loginModalOpen)
   const closeLogin = useUiStore((s) => s.closeLogin)
   const runReturnAction = useUiStore((s) => s.runReturnAction)
+  const clearReturnAction = useUiStore((s) => s.clearReturnAction)
   const showToast = useUiStore((s) => s.showToast)
   const setLogin = useAuthStore((s) => s.setLogin)
   const navigate = useNavigate()
@@ -135,7 +136,7 @@ export function LoginModal() {
           <div style={{ marginTop: 14, textAlign: 'center', fontSize: 13 }}>
             <span style={{ color: 'var(--text-weak)' }}>还没有账号？</span>
             <button
-              onClick={() => { closeLogin(); navigate('/register') }}
+              onClick={() => { closeLogin(); clearReturnAction(); navigate('/register') }}
               style={{ background: 'none', border: 'none', color: '#8C1F28', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
             >
               去注册

@@ -18,6 +18,8 @@ interface TrashRow { id: number; name: string; product_no: string; series: strin
 
 export default function ProductsTrash() {
   const [list, setList] = useState<TrashRow[]>([])
+  const [total, setTotal] = useState(0) // 审计修复：此前未存 total，分页器回退为
+                                        // 当前页行数，超过一页后无法翻页
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [clearOpen, setClearOpen] = useState(false)
@@ -25,7 +27,7 @@ export default function ProductsTrash() {
   const load = useCallback(() => {
     setLoading(true)
     http.get(`${adminApi.products}/trash`, { params: { page, page_size: 10 } })
-      .then((res: any) => setList(res.data.items))
+      .then((res: any) => { setList(res.data.items); setTotal(res.data.total) })
       .catch((e: any) => message.error(e.message))
       .finally(() => setLoading(false))
   }, [page])
@@ -72,7 +74,7 @@ export default function ProductsTrash() {
         <span style={{ marginLeft: 10, fontSize: 12, color: '#999' }}>清空后不可恢复，操作前请确认</span>
       </div>
       <Table rowKey="id" loading={loading} columns={columns} dataSource={list}
-        pagination={{ current: page, pageSize: 10, onChange: setPage, showSizeChanger: false }}
+        pagination={{ current: page, pageSize: 10, total, onChange: setPage, showSizeChanger: false }}
       />
       <ConfirmDanger
         open={clearOpen}

@@ -18,16 +18,19 @@ interface TrashRow { id: number; title: string; publish_date: string }
 
 export default function NewsTrash() {
   const [list, setList] = useState<TrashRow[]>([])
+  const [total, setTotal] = useState(0) // 审计修复：此前写死 page_size=20 且无分页，
+                                        // 超过 20 条时其余数据不可达
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [clearOpen, setClearOpen] = useState(false)
 
   const load = useCallback(() => {
     setLoading(true)
-    http.get(`${adminApi.news}/trash`, { params: { page: 1, page_size: 20 } })
-      .then((res: any) => setList(res.data.items))
+    http.get(`${adminApi.news}/trash`, { params: { page, page_size: 10 } })
+      .then((res: any) => { setList(res.data.items); setTotal(res.data.total) })
       .catch((e: any) => message.error(e.message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [page])
   useEffect(load, [load])
 
   const restore = async (id: number) => {
@@ -62,7 +65,9 @@ export default function NewsTrash() {
       <div style={{ marginBottom: 12 }}>
         <Button danger icon={<DeleteOutlined />} onClick={() => setClearOpen(true)}>彻底清空回收站</Button>
       </div>
-      <Table rowKey="id" loading={loading} columns={columns} dataSource={list} pagination={false} />
+      <Table rowKey="id" loading={loading} columns={columns} dataSource={list}
+        pagination={{ current: page, pageSize: 10, total, onChange: setPage, showSizeChanger: false }}
+      />
       <ConfirmDanger open={clearOpen} title="彻底清空回收站" content="将物理删除回收站中全部新闻，此操作不可撤销！" confirmText="确认清空" onOk={clearTrash} onCancel={() => setClearOpen(false)} />
     </div>
   )

@@ -49,24 +49,31 @@ export default function Profile() {
   const [phone, setPhone] = useState('')
   const [pwd, setPwd] = useState({ old: '', fresh: '' })
   const [error, setError] = useState('')
+  const [loadError, setLoadError] = useState('') // 审计修复：资料/意向加载失败提示（此前静默吞错）
   const fileRef = useRef<HTMLInputElement>(null) // 头像上传 input
 
-  // 加载个人资料 + 我的意向
+  // 加载个人资料 + 我的意向（审计修复：失败显示错误而非空白/“暂无意向”误导）
   useEffect(() => {
     http.get(userApi.profile).then((res: any) => {
       setProfile(res.data)
       setNick(res.data.nickname ?? '')
       setPhone(res.data.phone ?? '')
-    }).catch(() => {})
-    http.get(userApi.intents).then((res: any) => setIntents(res.data.items ?? [])).catch(() => {})
+    }).catch((e: any) => setLoadError(e.message || '资料加载失败'))
+    http.get(userApi.intents).then((res: any) => setIntents(res.data.items ?? [])).catch(() => setLoadError('意向记录加载失败'))
   }, [])
 
   // 更新资料（昵称/手机号）
   const handleSaveInfo = async () => {
     setError('')
+    // 审计修复：手机号格式校验（此前仅 maxLength，填了非法号码也保存）
+    if (phone && !/^1\d{10}$/.test(phone)) { setError('手机号格式不正确（11 位，1 开头）'); return }
     try {
       await http.put(userApi.profile, { nickname: nick, phone })
-      setLogin(useAuthStore.getState().userToken ?? '', nick || '宫阙会员', profile?.avatar ?? '')
+      // 审计修复：从 store 读真实 token 写回登录态——此前 `?? ''` 在 token 为空时
+      // 会把 isLogin 置 true 而 token 为空串，导致后续请求不带鉴权头
+      const token = useAuthStore.getState().userToken
+      if (!token) return
+      setLogin(token, nick || '宫阙会员', profile?.avatar ?? '')
       showToast('ok', '资料已保存')
     } catch (e: any) { setError(e.message) }
   }
@@ -74,7 +81,9 @@ export default function Profile() {
   // 修改密码
   const handleChangePwd = async () => {
     setError('')
-    if (pwd.fresh.length < 6) { setError('新密码长度需 6-20 位'); return }
+    // 审计修复：补校验——新密码上限 20 位、原密码必填（此前仅查下限 6）
+    if (pwd.fresh.length < 6 || pwd.fresh.length > 20) { setError('新密码长度需 6-20 位'); return }
+    if (!pwd.old) { setError('请输入原密码'); return }
     try {
       await http.put(userApi.password, { old_password: pwd.old, new_password: pwd.fresh })
       setPwd({ old: '', fresh: '' })
@@ -96,6 +105,8 @@ export default function Profile() {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 2 * 1024 * 1024) { showToast('err', '图片不能超过 2MB'); return }
+    // 审计修复：显式校验文件类型（accept 属性可被绕过，此前可上传任意类型文件）
+    if (!['image/jpeg', 'image/png'].includes(file.type)) { showToast('err', '仅支持 jpg/png 图片'); return }
     const fd = new FormData()
     fd.append('file', file)
     fd.append('avatar_key', '')
@@ -118,6 +129,8 @@ export default function Profile() {
     <div>
       <PageBanner title="个人中心" en="My Account" />
       <div className="container" style={{ maxWidth: 960 }}>
+        {/* 审计修复：加载失败提示（此前静默吞错无法区分“暂无”与“请求失败”） */}
+        {loadError && <div style={{ margin: '0 0 12px', padding: '10px 14px', background: '#FDF0EE', border: '1px solid #E5C6C0', color: '#8C1F28', fontSize: 13, borderRadius: 2 }}>⚠ {loadError}</div>}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 28, alignItems: 'start' }}>
           {/* ===== 左：资料卡 + 导航 ===== */}
           <div style={{ background: '#FFFDF7', border: '1px solid var(--line)', borderRadius: 2, padding: 28, textAlign: 'center' }}>

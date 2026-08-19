@@ -63,3 +63,12 @@ def get_settings() -> Settings:
 
 # 模块级单例，供各模块直接 `from app.config import settings` 引用
 settings = get_settings()
+
+# ---- 生产环境安全门禁（代码审计 2026-08-19 新增）----
+# 若生产环境未显式注入 SECRET_KEY（仍为默认值），直接拒绝启动：
+# 默认密钥是公开常量，可离线伪造任意 admin JWT，属上线阻断项。
+if settings.ENV == "production" and settings.SECRET_KEY == "change-me-to-a-random-64-hex-string":
+    raise RuntimeError(
+        "SECRET_KEY 未配置！生产环境禁止使用默认密钥，"
+        "请在 .env 或环境变量中设置强随机密钥（可用：python -c \"import secrets;print(secrets.token_hex(32))\")"
+    )

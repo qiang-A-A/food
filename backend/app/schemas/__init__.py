@@ -9,7 +9,7 @@
 from datetime import datetime  # 时间字段
 from typing import Generic, TypeVar  # 泛型分页
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator  # Pydantic v2
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator  # Pydantic v2
 
 # ---- 通用 ----
 T = TypeVar("T")
@@ -378,7 +378,11 @@ class UserAdminOut(UserOut):
 # ============================================================
 
 class AdminCreateIn(BaseModel):
-    """新增后台用户：密码必填（bcrypt 哈希后入库）。"""
+    """新增后台用户：密码必填（bcrypt 哈希后入库）。
+
+    审计修复（2026-08-19）：phone/email 空串（前端未填时提交 ""）统一转 None，
+    此前空串会触发 pattern 校验失败 → 400，导致「不填手机号无法创建管理员」。
+    """
     username: str = Field(..., min_length=2, max_length=50)
     password: str = Field(..., min_length=6, max_length=20)
     name: str = Field(..., max_length=50)
@@ -391,9 +395,20 @@ class AdminCreateIn(BaseModel):
     role_id: int = 1
     is_activate: bool = True
 
+    @field_validator("phone", "email", mode="before")
+    @classmethod
+    def _empty_to_none(cls, v):
+        """空串视为未填写（转 None，跳过后续 pattern 校验）。"""
+        return None if v == "" else v
+
 
 class AdminUpdateIn(BaseModel):
-    """编辑后台用户：可选字段（None 不更新；password 提供则重置）。"""
+    """编辑后台用户：可选字段（None 不更新；password 提供则重置）。
+
+    审计修复（2026-08-19）：password/phone/email 空串统一转 None——
+    此前前端编辑时密码留空提交 "" 触发 min_length 校验失败 → 400，
+    导致「编辑管理员 100% 失败」（留空=不修改的语义不成立）。
+    """
     username: str | None = None
     password: str | None = Field(None, min_length=6, max_length=20)
     name: str | None = None
@@ -405,6 +420,12 @@ class AdminUpdateIn(BaseModel):
     dept_id: int | None = None
     role_id: int | None = None
     is_activate: bool | None = None
+
+    @field_validator("password", "phone", "email", mode="before")
+    @classmethod
+    def _empty_to_none(cls, v):
+        """空串视为未修改（转 None，不触发长度/格式校验、不更新字段）。"""
+        return None if v == "" else v
 
 
 # ============================================================
@@ -418,11 +439,16 @@ class DepartmentIn(BaseModel):
 
 
 class DepartmentOut(BaseModel):
-    """部门输出（含子部门树结构，前端递归渲染）。"""
+    """部门输出（含子部门树结构，前端递归渲染）。
+
+    审计修复（2026-08-19）：补 is_activate 字段——此前输出缺失导致
+    后台部门列表「启用」列永远显示停用（undefined 落到 false 分支）。
+    """
     model_config = ConfigDict(from_attributes=True)
     id: int
     dept_name: str
     parent_id: int | None = None
+    is_activate: bool = True  # 启用状态（数据库字段，前端启用/停用列数据源）
     children: list["DepartmentOut"] = []  # 子部门（树形，递归）
 
 

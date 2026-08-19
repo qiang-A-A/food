@@ -21,6 +21,7 @@ interface UiState {
   // ---- 回跳动作（登录成功后执行并清空）----
   returnAction: ReturnAction
   runReturnAction: () => void
+  clearReturnAction: () => void  // 审计修复：去注册等场景需主动清空，防残留误执行
 
   // ---- Toast ----
   toast: { type: 'ok' | 'err'; text: string } | null
@@ -45,6 +46,10 @@ export const useUiStore = create<UiState>((set, get) => ({
     set({ returnAction: null })
     action?.()
   },
+
+  // 清空回跳动作（审计修复：从登录弹窗跳转注册页时必须清空，
+  // 否则旧动作残留，用户之后再次通过弹窗登录会误执行上一次的回跳）
+  clearReturnAction: () => set({ returnAction: null }),
 
   toast: null,
 

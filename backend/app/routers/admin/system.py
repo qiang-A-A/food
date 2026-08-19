@@ -28,6 +28,21 @@ from app.utils.response import ok
 router = APIRouter()
 
 
+def _ensure_active_admin_remains(db: Session, exclude_id: int) -> None:
+    """确保系统至少保留一个激活管理员（审计修复 2026-08-19）。
+
+    删除/禁用管理员前调用：若除目标外已无其他激活管理员，则拒绝操作，
+    防止把所有管理员删光/禁光导致后台永久锁死。
+    """
+    active_others = (
+        db.query(Admin)
+        .filter(Admin.is_activate.is_(True), Admin.id != exclude_id)
+        .count()
+    )
+    if active_others == 0:
+        raise AppError.forbidden("系统至少需要保留一个启用状态的管理员")
+
+
 # ============================================================
 # 仪表盘统计
 # ============================================================
@@ -179,6 +194,9 @@ def admin_update_admin(
     if not target:
         raise AppError.not_found("管理员不存在")
     data = body.model_dump(exclude_unset=True)
+    # 审计修复：禁止把最后一个激活管理员禁用（防后台锁死）
+    if data.get("is_activate") is False and target.is_activate:
+        _ensure_active_admin_remains(db, exclude_id=target.id)
     # 密码单独处理（哈希）
     if data.get("password"):
         target.password_hash = hash_password(data.pop("password"))
@@ -201,7 +219,7 @@ def admin_update_admin_status(
     current_admin: Admin = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
-    """禁用/启用管理员；禁止禁用自己。"""
+    """禁用/启用管理员；禁止禁用自己；禁止禁用最后一个激活管理员。"""
     if admin_id == current_admin.id:
         raise AppError.forbidden("不能禁用当前登录账号")
     target = db.get(Admin, admin_id)
@@ -210,6 +228,8 @@ def admin_update_admin_status(
     is_activate = body.get("is_activate")
     if not isinstance(is_activate, bool):
         raise AppError.param("is_activate 必须为布尔值")
+    if is_activate is False and target.is_activate:
+        _ensure_active_admin_remains(db, exclude_id=target.id)
     target.is_activate = is_activate
     target.updated_by = current_admin.username
     db.commit()
@@ -222,12 +242,14 @@ def admin_delete_admin(
     current_admin: Admin = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
-    """删除管理员（禁止删除自己）。"""
+    """删除管理员（禁止删除自己；禁止删除最后一个激活管理员）。"""
     if admin_id == current_admin.id:
         raise AppError.forbidden("不能删除当前登录账号")
     target = db.get(Admin, admin_id)
     if not target:
         raise AppError.not_found("管理员不存在")
+    if target.is_activate:
+        _ensure_active_admin_remains(db, exclude_id=target.id)
     db.delete(target)
     db.commit()
     return ok(message="管理员已删除")

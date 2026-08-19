@@ -45,12 +45,17 @@ export default function Contact() {
               <Row label="公司地址" value={info?.contact_address || '（待填地址）'} />
             </div>
 
-            {/* 微信二维码（占位） */}
+            {/* 微信二维码（审计修复：读取后端 contact_wechat_qr 真实数据，
+                此前硬编码「占位」导致设置中的二维码永远不生效） */}
             <div style={{ marginTop: 24, textAlign: 'center' }}>
               <div style={{ display: 'inline-block', padding: 10, border: '1px solid var(--line)', background: '#FFF' }}>
-                <div style={{ width: 108, height: 108, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#999' }}>
-                  微信二维码占位
-                </div>
+                {info?.contact_wechat_qr ? (
+                  <img src={info.contact_wechat_qr} alt="微信二维码" style={{ width: 108, height: 108, objectFit: 'contain', display: 'block' }} />
+                ) : (
+                  <div style={{ width: 108, height: 108, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#999' }}>
+                    微信二维码待上传
+                  </div>
+                )}
               </div>
               <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-weak)' }}>扫码添加商务顾问微信</div>
             </div>

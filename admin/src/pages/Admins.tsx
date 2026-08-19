@@ -56,14 +56,21 @@ export default function Admins() {
   }
 
   // 保存（新增/编辑；password 有值则重置密码）
+  // 审计修复：编辑时 password/phone 留空（""）不提交——此前空串会被后端
+  // min_length/pattern 校验拒绝（400），导致「编辑管理员 100% 失败」。
   const handleSubmit = async () => {
     const values = await form.validateFields()
     try {
       if (editing) {
-        await http.put(`${adminApi.admins}/${editing.id}`, values)
+        const payload = { ...values }
+        if (!payload.password) delete payload.password   // 留空 = 不修改密码
+        if (!payload.phone) delete payload.phone         // 留空 = 不修改手机号
+        await http.put(`${adminApi.admins}/${editing.id}`, payload)
         message.success('管理员已更新')
       } else {
-        await http.post(adminApi.admins, values)
+        const payload = { ...values }
+        if (!payload.phone) delete payload.phone         // 选填：空则不提交
+        await http.post(adminApi.admins, payload)
         message.success('管理员创建成功')
       }
       setModalOpen(false)

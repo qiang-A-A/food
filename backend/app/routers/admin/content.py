@@ -101,7 +101,11 @@ def admin_update_category(
         exists = db.query(Category).filter(Category.slug == body.slug, Category.id != category_id).first()
         if exists:
             raise AppError.conflict("slug 已存在")
-    for key, value in body.model_dump().items():
+    # 审计修复：改用 exclude_unset 只更新前端显式提交的字段——
+    # 此前全量覆盖会把未提交字段（如 cover_image）重置为默认值，
+    # 导致「编辑一次品类/新闻/轮播封面或状态被悄悄清空」的缺陷。
+    data = body.model_dump(exclude_unset=True)
+    for key, value in data.items():
         setattr(cat, key, value)
     cat.updated_by = admin.username
     db.commit()
@@ -114,15 +118,17 @@ def admin_delete_category(
     admin: Admin = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
-    """删除品类：其下存在未删除产品则 409（需先迁移产品）。"""
+    """删除品类：其下存在任何产品（含回收站）则 409（需先迁移产品）。"""
     cat = db.get(Category, category_id)
     if not cat:
         raise AppError.not_found("品类不存在")
+    # 审计修复：此前仅查未删除产品，回收站产品会成为孤儿（SQLite 悬挂外键 /
+    # PostgreSQL 直接 500）。现在含已删除产品一并拦截，保证两库行为一致。
     has_products = db.query(Product).filter(
-        Product.category_id == category_id, Product.is_deleted.is_(False)
+        Product.category_id == category_id
     ).first()
     if has_products:
-        raise AppError.conflict("该品类下仍有产品，请先迁移或删除后再操作")
+        raise AppError.conflict("该品类下仍有产品（含回收站），请先迁移或彻底删除后再操作")
     db.delete(cat)
     db.commit()
     return ok(message="品类已删除")
@@ -159,11 +165,11 @@ def admin_create_news(
     db: Session = Depends(get_db),
 ):
     """新增新闻：content 富文本入库前净化（视频 iframe 域名白名单）。"""
-    news = News(
-        **body.model_dump(),
-        content=clean(body.content),
-        created_by=admin.username,
-    )
+    # 审计修复：model_dump() 已含 content 键，不能再用关键字重复传参
+    # （此前 `News(**dump, content=clean(...))` 在 clean 修复后暴露 TypeError）
+    data = body.model_dump()
+    data["content"] = clean(data.get("content"))
+    news = News(**data, created_by=admin.username)
     db.add(news)
     db.commit()
     db.refresh(news)
@@ -217,7 +223,7 @@ def admin_update_news(
     news = db.get(News, news_id)
     if not news or news.is_deleted:
         raise AppError.not_found("新闻不存在")
-    data = body.model_dump()
+    data = body.model_dump(exclude_unset=True)
     if data.get("content") is not None:
         data["content"] = clean(data["content"])
     for key, value in data.items():
@@ -305,7 +311,9 @@ def admin_update_banner(
     banner = db.get(Banner, banner_id)
     if not banner:
         raise AppError.not_found("轮播图不存在")
-    for key, value in body.model_dump().items():
+    # 审计修复：exclude_unset 避免编辑轮播时 is_activate 被默认值 True 覆盖
+    # （此前编辑会把停用的轮播悄悄重置为启用）
+    for key, value in body.model_dump(exclude_unset=True).items():
         setattr(banner, key, value)
     banner.updated_by = admin.username
     db.commit()

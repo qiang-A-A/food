@@ -18,7 +18,7 @@ import { ConfirmDanger } from '@/components/ConfirmDanger'
 import { TopTag } from '@/components/StatusTag'
 import { RichTextEditor } from '@/components/RichTextEditor'
 
-interface NewsRow { id: number; title: string; summary: string | null; is_top: boolean; is_activate: boolean; publish_date: string }
+interface NewsRow { id: number; title: string; summary: string | null; cover_image: string | null; is_top: boolean; is_activate: boolean; publish_date: string }
 
 const PAGE_SIZE = 10
 
@@ -130,6 +130,12 @@ export default function News() {
           </Form.Item>
           <Form.Item name="summary" label="摘要">
             <Input.TextArea rows={2} placeholder="列表页展示的摘要（选填）" maxLength={300} />
+          </Form.Item>
+          {/* 审计修复：补封面字段——此前表单无 cover_image，编辑时后端
+              全量更新会将其重置为空（编辑一次新闻封面丢失），且无任何入口
+              设置封面。列表页/首页新闻卡展示依赖该字段。 */}
+          <Form.Item name="cover_image" label="封面图 URL">
+            <Input placeholder="通过上传获得 URL，或填 svg:news 占位（选填）" />
           </Form.Item>
           <Form.Item name="publish_date" label="发布日期">
             <DatePicker showTime style={{ width: '100%' }} />

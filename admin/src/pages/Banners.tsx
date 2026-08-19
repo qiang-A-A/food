@@ -112,6 +112,12 @@ export default function Banners() {
           <Form.Item name="sort_order" label="排序（越小越前）" initialValue={0}>
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
+          {/* 审计修复：编辑弹窗补 is_activate 字段——此前表单无此字段，
+              提交体不含 is_activate → 后端全量更新将其重置为默认 true，
+              导致被停用的轮播「编辑一次就悄悄复活」。 */}
+          <Form.Item name="is_activate" label="启用" valuePropName="checked" initialValue={true}>
+            <Switch />
+          </Form.Item>
         </Form>
       </Modal>
 

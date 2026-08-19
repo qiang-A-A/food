@@ -107,11 +107,10 @@ def admin_create_product(
     # 产品编号唯一（409）
     if db.query(Product).filter(Product.product_no == body.product_no).first():
         raise AppError.conflict("产品编号已存在")
-    product = Product(
-        **body.model_dump(),
-        description=clean(body.description),  # 富文本入库前净化（防 XSS）
-        created_by=admin.username,
-    )
+    # 审计修复：model_dump() 已含 description 键，不能再用关键字重复传参
+    data = body.model_dump()
+    data["description"] = clean(data.get("description"))  # 富文本入库前净化（防 XSS）
+    product = Product(**data, created_by=admin.username)
     db.add(product)
     db.commit()
     db.refresh(product)

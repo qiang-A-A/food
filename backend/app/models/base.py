@@ -35,7 +35,9 @@ class TimestampMixin:
     # 审计：修改人
     updated_by: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
-    # 审计：修改时间（应用层更新时手动刷新，见 utils 工具函数）
+    # 审计：修改时间（onupdate 由 SQLAlchemy 在 UPDATE 时自动刷新，
+    # 修复审计缺陷：此前缺 onupdate 导致 updated_at 恒等于 created_at）
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.now, server_default=func.now()
+        DateTime, nullable=False, default=datetime.now, server_default=func.now(),
+        onupdate=func.now(),
     )

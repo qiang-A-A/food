@@ -52,6 +52,7 @@ export default function Products() {
   const [editing, setEditing] = useState<ProductRow | null>(null)
   const [delTarget, setDelTarget] = useState<ProductRow | null>(null)  // 删除确认
   const [batchIds, setBatchIds] = useState<number[]>([])
+  const [batchDelOpen, setBatchDelOpen] = useState(false) // 审计修复：批量删除二次确认
   const [loading, setLoading] = useState(false)
 
   // 表单实例
@@ -109,12 +110,18 @@ export default function Products() {
       message.error('规格参数不是合法 JSON')
       return
     }
-    const payload = {
+    const payload: any = {
       ...values,
       spec_params: specParams,
       spec_params_text: undefined,
-      // 封面取实拍图首张（PRD v2.2 封面图+其它图）
-      cover_image: values.product_images?.[0] ?? null,
+    }
+    // 审计修复：封面仅在「创建」或「本次提交了实拍图」时同步为首图——
+    // 此前编辑时 product_images 为空也会强制写 cover_image: null，
+    // 把仅设了封面的老产品封面清空（后端 exclude_unset 下显式 null 同样覆盖）
+    if (values.product_images?.length) {
+      payload.cover_image = values.product_images[0]
+    } else if (!editing) {
+      payload.cover_image = null
     }
     try {
       if (editing) {
@@ -151,13 +158,25 @@ export default function Products() {
     } catch (e: any) { message.error(e.message) }
   }
 
-  // 批量操作
+  // 批量操作（审计修复：删除类操作需二次确认，与单删一致的危险操作规范）
   const batchAction = async (action: string) => {
     if (batchIds.length === 0) { message.warning('请先勾选产品'); return }
+    if (action === 'delete') { setBatchDelOpen(true); return }  // 删除走确认弹窗
     try {
       await http.post(`${adminApi.products}/batch`, { ids: batchIds, action })
       message.success(`批量${action === 'delete' ? '删除' : action}完成`)
       setBatchIds([])
+      load()
+    } catch (e: any) { message.error(e.message) }
+  }
+
+  // 批量删除确认后执行
+  const handleBatchDelete = async () => {
+    try {
+      await http.post(`${adminApi.products}/batch`, { ids: batchIds, action: 'delete' })
+      message.success(`已批量移入回收站 ${batchIds.length} 项`)
+      setBatchIds([])
+      setBatchDelOpen(false)
       load()
     } catch (e: any) { message.error(e.message) }
   }
@@ -371,6 +390,15 @@ export default function Products() {
         content={`确定将「${delTarget?.name}」移入回收站吗？可在回收站恢复。`}
         onOk={handleDelete}
         onCancel={() => setDelTarget(null)}
+      />
+
+      {/* 批量删除二次确认（审计修复：危险操作统一二次确认） */}
+      <ConfirmDanger
+        open={batchDelOpen}
+        title="批量删除产品"
+        content={`确定将选中的 ${batchIds.length} 个产品移入回收站吗？可在回收站恢复。`}
+        onOk={handleBatchDelete}
+        onCancel={() => setBatchDelOpen(false)}
       />
     </div>
   )

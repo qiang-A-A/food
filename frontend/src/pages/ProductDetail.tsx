@@ -2,9 +2,10 @@
 // src/pages/ProductDetail.tsx — 产品详情（PRD F-3）
 // -----------------------------------------------------------------------------
 // 功能：左图区（产品实拍图/礼盒包装图 Tab + 缩略图切换）右信息区（产品编号/
-//       所属系列/金色分隔线/规格参数表/食品合规字段/富文本描述）→
-//       三个 CTA（权限双态）：
-//        · 立即预约 / 提交意向 → 意向表单弹窗（source=product）
+//       所属系列/金色分隔线/规格参数表/食品合规字段）→
+//       产品说明按钮（点击打开滚动弹窗展示富文本正文，避免信息区失衡）+
+//       两个权限双态 CTA：
+//        · 立即预约 → 意向表单弹窗（source=product）
 //        · 咨询顾问 → 在线聊天弹窗（携带 product_id，后台会话展示来源产品）
 // 数据：GET /api/public/products/{id}；意向提交 POST /api/user/intents；
 //       聊天 GET/POST /api/user/messages。
@@ -52,6 +53,7 @@ export default function ProductDetail() {
   const [notFound, setNotFound] = useState(false)
   const [intentOpen, setIntentOpen] = useState(false)  // 意向弹窗开关
   const [chatOpen, setChatOpen] = useState(false)      // 咨询聊天弹窗开关
+  const [descOpen, setDescOpen] = useState(false)      // 产品说明弹窗开关
 
   // 加载产品详情
   useEffect(() => {
@@ -173,12 +175,22 @@ export default function ProductDetail() {
             </tbody>
           </table>
 
-          {/* 产品描述（富文本渲染） */}
+          {/* 产品说明：按钮 → 滚动弹窗（避免正文挤占信息区，UI 平衡） */}
           {product.description && (
-            <div style={{ marginTop: 18 }}>
-              <div style={{ fontFamily: 'var(--font-title)', fontSize: 16, fontWeight: 600, color: 'var(--red-3)', marginBottom: 8 }}>产品说明</div>
-              <RichText html={product.description} />
-            </div>
+            <button
+              onClick={() => setDescOpen(true)}
+              style={{
+                marginTop: 16, display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold-dark)',
+                borderRadius: 2, padding: '9px 20px', fontSize: 13.5, letterSpacing: 1,
+                cursor: 'pointer', transition: 'all .2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(201,169,106,.12)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+            >
+              产品说明
+              <span style={{ fontSize: 12, opacity: .7 }}>›</span>
+            </button>
           )}
 
           {/* ===== 权限双态 CTA（UI/UX §6.5） ===== */}
@@ -190,15 +202,7 @@ export default function ProductDetail() {
               onLoggedIn={() => setIntentOpen(true)}
               onGuestReturn={() => setIntentOpen(true)}  // 登录成功后自动展开（回跳原操作）
             />
-            {/* 提交意向：打开意向表单弹窗（source=product，原「咨询顾问」按需求改名） */}
-            <PermissionCTA
-              guestLabel="登录后可提交意向"
-              userLabel="提交意向"
-              variant="ghost"
-              onLoggedIn={() => setIntentOpen(true)}
-              onGuestReturn={() => setIntentOpen(true)}
-            />
-            {/* 咨询顾问：新增 → 打开在线聊天弹窗（携带本产品 id，后台可溯源） */}
+            {/* 咨询顾问：打开在线聊天弹窗（携带本产品 id，后台可溯源） */}
             <PermissionCTA
               guestLabel="登录后可咨询"
               userLabel="咨询顾问"
@@ -228,6 +232,26 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
+      {/* ===== 产品说明弹窗（可关闭、内容滚动） ===== */}
+      {descOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="产品说明"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setDescOpen(false) }}
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(43,29,22,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}
+        >
+          <div style={{ width: '100%', maxWidth: 640, background: '#FFFDF7', borderRadius: 2, boxShadow: '0 12px 40px rgba(0,0,0,.3)', maxHeight: '80vh', overflow: 'auto' }}>
+            <div style={{ height: 4, background: 'var(--grad-authbar)', borderRadius: '2px 2px 0 0' }} />
+            <div style={{ position: 'relative', padding: '26px 30px' }}>
+              <button aria-label="关闭" onClick={() => setDescOpen(false)} style={{ position: 'absolute', top: 14, right: 16, background: 'none', border: 'none', fontSize: 22, color: '#999', cursor: 'pointer', lineHeight: 1 }}>×</button>
+              <div style={{ fontFamily: 'var(--font-title)', fontSize: 18, fontWeight: 700, color: 'var(--red-3)', marginBottom: 16 }}>产品说明</div>
+              <RichText html={product.description} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ===== 咨询聊天弹窗（产品详情页打开，携带来源产品 id） ===== */}
       {chatOpen && (
         <ChatWidget productId={Number(id)} onClose={() => setChatOpen(false)} />

@@ -223,9 +223,17 @@ def delete_my_intent(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """删除我的意向（仅本人；已撤销/已成交的意向可删除 → 进回收站显示已删除）。"""
+    """删除我的意向（仅本人；已撤销/已成交的意向可删除 → 进回收站显示已删除）。
+
+    幂等处理（Bug 修复 2026-08-20）：后台若已「永久删除」该意向（物理删除，
+    记录不存在），前台列表仍可能展示它——此时删除直接视为成功返回，
+    不再报「意向不存在」阻塞用户操作（记录已不存在，无需进回收站）。
+    """
     intent = db.get(PurchaseIntent, intent_id)
-    if not intent or intent.is_deleted or intent.user_id != user.id:
+    # 记录已被后台永久删除（物理删除）→ 幂等成功，无需进回收站
+    if not intent:
+        return ok(message="意向已删除")
+    if intent.is_deleted or intent.user_id != user.id:
         raise AppError.not_found("意向不存在")
     # 需求：仅已撤销（revoked）与已成交（deal）可删除
     if intent.status not in ("revoked", "deal"):

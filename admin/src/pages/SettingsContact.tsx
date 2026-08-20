@@ -12,6 +12,7 @@ import { SaveOutlined } from '@ant-design/icons'
 
 import { http } from '@/api/http'
 import { adminApi } from '@tsgq/api-client'
+import { SingleImageUpload } from '@/components/SingleImageUpload'
 
 export default function SettingsContact() {
   const [form] = Form.useForm()
@@ -46,8 +47,8 @@ export default function SettingsContact() {
           <Form.Item name="contact_address" label="公司地址">
             <Input placeholder="门店/公司地址" />
           </Form.Item>
-          <Form.Item name="contact_wechat_qr" label="微信二维码 URL">
-            <Input placeholder="二维码图片地址（可先上传）" />
+          <Form.Item name="contact_wechat_qr" label="微信二维码">
+            <SingleImageUpload placeholder="或直接粘贴二维码图片 URL（选填）" />
           </Form.Item>
           <Form.Item name="footer_icp" label="ICP 备案号（页脚）">
             <Input placeholder="如 京ICP备xxxxxxxx号" />

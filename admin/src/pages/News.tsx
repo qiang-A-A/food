@@ -16,9 +16,9 @@ import dayjs from 'dayjs'
 import { http } from '@/api/http'
 import { adminApi } from '@tsgq/api-client'
 import { ConfirmDanger } from '@/components/ConfirmDanger'
-import { ImageUploader } from '@/components/ImageUploader'
-import { TopTag } from '@/components/StatusTag'
 import { RichTextEditor } from '@/components/RichTextEditor'
+import { SingleImageUpload } from '@/components/SingleImageUpload'
+import { TopTag } from '@/components/StatusTag'
 
 interface NewsRow { id: number; title: string; summary: string | null; cover_image: string | null; is_top: boolean; is_activate: boolean; publish_date: string }
 
@@ -135,7 +135,7 @@ export default function News() {
           </Form.Item>
           {/* 封面图：上传按钮 + 手动 URL 双入口（单图，首张即封面） */}
           <Form.Item name="cover_image" label="封面图">
-            <CoverUploader />
+            <SingleImageUpload placeholder="或直接粘贴图片 URL（选填，可留空用占位图）" />
           </Form.Item>
           <Form.Item name="publish_date" label="发布日期">
             <DatePicker showTime style={{ width: '100%' }} />
@@ -155,32 +155,6 @@ export default function News() {
       </Modal>
 
       <ConfirmDanger open={!!delTarget} title="删除新闻" content={`确定将「${delTarget?.title}」移入回收站吗？`} onOk={handleDelete} onCancel={() => setDelTarget(null)} />
-    </div>
-  )
-}
-
-// -----------------------------------------------------------------------------
-// CoverUploader — 新闻封面上传（桥接组件）
-// 功能：AntD Form 注入的是单个字符串值，ImageUploader 是数组受控组件，
-//       此处做转换：单图上传回填 URL；同时保留手动输入框（双入口）。
-// =============================================================================
-function CoverUploader({ value, onChange }: { value?: string | null; onChange?: (v: string | null) => void }) {
-  return (
-    <div>
-      {/* 上传按钮（max=1，上传后回填 URL） */}
-      <ImageUploader
-        value={value ? [value] : []}
-        max={1}
-        onChange={(urls) => onChange?.(urls[0] ?? null)}
-      />
-      {/* 手动 URL 输入（与上传值双向同步） */}
-      <Input
-        value={value ?? ''}
-        onChange={(e) => onChange?.(e.target.value || null)}
-        placeholder="或直接粘贴图片 URL（选填，可留空用占位图）"
-        style={{ marginTop: 8 }}
-        allowClear
-      />
     </div>
   )
 }

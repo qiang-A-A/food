@@ -14,6 +14,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { http } from '@/api/http'
 import { adminApi } from '@tsgq/api-client'
 import { ConfirmDanger } from '@/components/ConfirmDanger'
+import { SingleImageUpload } from '@/components/SingleImageUpload'
 
 interface CatRow { id: number; name: string; slug: string; cover_image: string | null; sort_order: number; is_activate: boolean; product_count: number }
 
@@ -112,8 +113,8 @@ export default function Categories() {
           </Form.Item>
           {/* 审计修复：补封面字段——此前表单无 cover_image，编辑时后端全量
               更新会将其重置为空（编辑一次系列封面丢失），且无入口设置封面 */}
-          <Form.Item name="cover_image" label="封面图 URL">
-            <Input placeholder="通过上传获得 URL，或填 svg:cat-xxx 占位（选填）" />
+          <Form.Item name="cover_image" label="封面图">
+            <SingleImageUpload placeholder="或直接粘贴图片 URL（可填 svg:cat-xxx 占位，选填）" />
           </Form.Item>
           <Form.Item name="is_activate" label="启用" valuePropName="checked" initialValue={true}>
             <Switch />

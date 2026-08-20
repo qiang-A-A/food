@@ -13,6 +13,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { http } from '@/api/http'
 import { adminApi } from '@tsgq/api-client'
 import { ConfirmDanger } from '@/components/ConfirmDanger'
+import { SingleImageUpload } from '@/components/SingleImageUpload'
 
 interface BannerRow { id: number; title: string | null; image: string; link_url: string | null; sort_order: number; is_activate: boolean }
 
@@ -100,8 +101,8 @@ export default function Banners() {
 
       <Modal title={editing ? '编辑轮播图' : '上传轮播图'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} okText="保存" cancelText="取消" destroyOnHidden>
         <Form form={form} layout="vertical" style={{ marginTop: 8 }}>
-          <Form.Item name="image" label="图片 URL" rules={[{ required: true, message: '请填写图片地址' }]} extra="通过上方上传获得 URL，或填 svg:hero-scene-N 占位">
-            <Input placeholder="图片 URL" />
+          <Form.Item name="image" label="轮播图片" rules={[{ required: true, message: '请选择或填写图片' }]} extra="点击上传或粘贴图片 URL（可填 svg:hero-scene-N 占位）">
+            <SingleImageUpload placeholder="或直接粘贴图片 URL（如 svg:hero-scene-1 占位）" />
           </Form.Item>
           <Form.Item name="title" label="标题">
             <Input placeholder="如 中秋主视觉" />

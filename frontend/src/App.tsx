@@ -10,6 +10,7 @@ import { Route, Routes } from 'react-router-dom'
 import { PublicLayout } from '@/layouts/PublicLayout'
 import { ProfileGuard } from '@/guards/ProfileGuard'
 import { LoginModal } from '@/components/LoginModal'
+import { ScrollToTop } from '@/components/ScrollToTop'
 import { Toast } from '@/components/Toast'
 
 import Home from '@/pages/Home'
@@ -28,6 +29,8 @@ import NotFound from '@/pages/NotFound'
 function App() {
   return (
     <>
+      {/* 路由切换滚动重置：任何入口进入新页面都从顶部开始（含页脚导航跳转） */}
+      <ScrollToTop />
       {/* 全局浮层：登录弹窗（权限分水岭）+ Toast */}
       <LoginModal />
       <Toast />

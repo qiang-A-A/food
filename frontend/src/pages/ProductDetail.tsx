@@ -241,7 +241,7 @@ export default function ProductDetail() {
           onMouseDown={(e) => { if (e.target === e.currentTarget) setDescOpen(false) }}
           style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(43,29,22,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px' }}
         >
-          <div style={{ width: '100%', maxWidth: 640, background: '#FFFDF7', borderRadius: 2, boxShadow: '0 12px 40px rgba(0,0,0,.3)', maxHeight: '80vh', overflow: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: 720, background: '#FFFDF7', borderRadius: 2, boxShadow: '0 12px 40px rgba(0,0,0,.3)', maxHeight: '80vh', overflow: 'auto' }}>
             <div style={{ height: 4, background: 'var(--grad-authbar)', borderRadius: '2px 2px 0 0' }} />
             <div style={{ position: 'relative', padding: '26px 30px' }}>
               <button aria-label="关闭" onClick={() => setDescOpen(false)} style={{ position: 'absolute', top: 14, right: 16, background: 'none', border: 'none', fontSize: 22, color: '#999', cursor: 'pointer', lineHeight: 1 }}>×</button>

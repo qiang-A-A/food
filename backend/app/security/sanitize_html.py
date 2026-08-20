@@ -32,6 +32,7 @@ ALLOWED_TAGS = {
 ALLOWED_ATTRS = {
     "a": {"href", "target"},
     "img": {"src", "alt"},
+    "img": {"src", "alt", "style"},  # style：图片拖拽 resize 后以 style="width:X%" 存储
     "iframe": {"src", "width", "height"},
     "video": {"src", "controls"},
 }

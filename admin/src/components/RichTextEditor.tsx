@@ -1,16 +1,17 @@
 // =============================================================================
 // src/components/RichTextEditor.tsx — TipTap 富文本编辑器（后台）
 // -----------------------------------------------------------------------------
-// 功能：新闻/关于内容的富文本编辑（开发技术文档 §5.5 + PRD B-5）——
-//       工具栏（加粗/斜体/标题/列表/引用/图片 URL/视频嵌入/撤销重做）；
-//       图片上传经 /api/admin/upload（kind=image）后以 URL 插入；
+// 功能：新闻/产品/关于内容的富文本编辑（开发技术文档 §5.5 + PRD B-5）——
+//       工具栏（加粗/斜体/标题/列表/引用/图片/视频嵌入/撤销重做）；
+//       图片上传经 /api/admin/upload（kind=image）后以 URL 插入，**选中后
+//       可拖拽右下角手柄调整宽度**（存 style="width:X%"，前端渲染自适应）；
 //       视频嵌入：支持 B站/腾讯分享链接自动转 iframe（视频插入仅超管，MVP
 //       全部后台用户视为超管）。
 // =============================================================================
 
 import { useEffect, useRef, useState } from 'react'
 import { Button, Input, Modal, Tooltip, message } from 'antd'
-import { EditorContent, useEditor } from '@tiptap/react'
+import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -22,6 +23,79 @@ import {
 
 import { http } from '@/api/http'
 import { adminApi } from '@tsgq/api-client'
+
+// ---- 图片拖拽调整大小：继承 Image，选中后右下角手柄拖拽改宽度 ----
+// 存储：style="width:X%"（相对编辑器内容宽度），前端渲染 max-width:100% 兜底
+const ImageResize = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      // 允许 style 属性（图片宽度），parseHTML 从 img 读取，renderHTML 回写
+      style: { default: null },
+    }
+  },
+  parseHTML() {
+    return [{ tag: 'img' }]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['img', mergeAttributes(HTMLAttributes)]
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(({ node, updateAttributes, selected }) => {
+      // 拖拽手柄组件：mousedown 开始拖拽 → 换算百分比 → 更新节点属性
+      const handleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        // 编辑器内容区宽度（换算百分比的基准）
+        const wrap = (e.currentTarget as HTMLElement).parentElement
+        const containerWidth = wrap?.parentElement?.clientWidth || 800
+        const img = wrap?.querySelector('img')
+        if (!img) return
+        const startX = e.clientX
+        const startW = img.getBoundingClientRect().width
+        const onMove = (ev: MouseEvent) => {
+          const newW = Math.max(40, startW + (ev.clientX - startX))
+          const pct = Math.min(100, Math.round((newW / containerWidth) * 100))
+          img.style.width = `${pct}%`
+        }
+        const onUp = () => {
+          window.removeEventListener('mousemove', onMove)
+          window.removeEventListener('mouseup', onUp)
+          // 拖拽结束：宽度写入节点属性（保存到 HTML）
+          const pct = img.style.width
+          if (pct) updateAttributes({ style: `width: ${pct}` })
+        }
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+      }
+
+      return (
+        <NodeViewWrapper style={{ display: 'inline-block', position: 'relative', margin: '4px 0', verticalAlign: 'top' }}>
+          <img
+            src={node.attrs.src}
+            alt={node.attrs.alt ?? ''}
+            style={{
+              maxWidth: '100%',
+              ...(node.attrs.style ? { width: node.attrs.style.replace('width:', '').trim() } : {}),
+            }}
+            draggable={false}
+          />
+          {/* 右下角拖拽手柄（仅选中时显示） */}
+          {selected && (
+            <span
+              onMouseDown={handleMouseDown}
+              style={{
+                position: 'absolute', right: -6, bottom: -6, width: 14, height: 14,
+                background: '#8C1F28', border: '2px solid #fff', borderRadius: 2,
+                cursor: 'se-resize', boxShadow: '0 1px 3px rgba(0,0,0,.3)', display: 'inline-block',
+              }}
+            />
+          )}
+        </NodeViewWrapper>
+      )
+    })
+  },
+})
 
 // ---- 自定义 iframe 节点（支持视频 URL 嵌入渲染）----
 const Iframe = Node.create({
@@ -77,7 +151,7 @@ export function RichTextEditor({ value, onChange, placeholder = '请输入内容
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Image.configure({ inline: false }),
+      ImageResize.configure({ inline: false }),  // 支持拖拽调整图片宽度
       Placeholder.configure({ placeholder }),
       Iframe,
     ],

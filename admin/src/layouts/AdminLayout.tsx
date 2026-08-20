@@ -10,8 +10,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  AppstoreOutlined, BlockOutlined, ClusterOutlined, DashboardOutlined,
-  FileTextOutlined, FolderOutlined, GiftOutlined, IdcardOutlined,
+  AppstoreOutlined, DashboardOutlined,
+  FileTextOutlined, FolderOutlined, GiftOutlined,
   InfoCircleOutlined, MessageOutlined, PictureOutlined, SettingOutlined,
   ShoppingCartOutlined, TeamOutlined, UserOutlined,
 } from '@ant-design/icons'
@@ -28,7 +28,7 @@ const FRONTEND_URL =
     ? `${window.location.protocol}//${window.location.hostname}:5173/`
     : '/'
 
-// ---- 13 项一级菜单定义（含消息管理，与方案 §4.2 结构一致）----
+// ---- 10 项一级菜单定义（人员管理收纳用户/管理员/部门/角色为二级）----
 // 消息管理菜单项在渲染时动态注入未读角标（useMessagesStore.unread）
 const MENU_ITEMS = [
   { key: 'dashboard', icon: <DashboardOutlined />, label: '仪表盘' },
@@ -65,10 +65,15 @@ const MENU_ITEMS = [
   },
   { key: 'messages', icon: <MessageOutlined />, label: '消息管理' },  // 未读角标在渲染时注入
   { key: 'intents', icon: <ShoppingCartOutlined />, label: '团购意向管理' },
-  { key: 'users', icon: <TeamOutlined />, label: '用户管理' },
-  { key: 'admins', icon: <IdcardOutlined />, label: '管理员管理' },
-  { key: 'departments', icon: <ClusterOutlined />, label: '部门管理' },
-  { key: 'roles', icon: <BlockOutlined />, label: '角色管理' },
+  {
+    key: 'personnel', icon: <TeamOutlined />, label: '人员管理',
+    children: [
+      { key: '/admin/users', label: '用户管理' },
+      { key: '/admin/admins', label: '管理员管理' },
+      { key: '/admin/departments', label: '部门管理' },
+      { key: '/admin/roles', label: '角色管理' },
+    ],
+  },
   {
     key: 'settings', icon: <SettingOutlined />, label: '系统设置',
     children: [
@@ -82,7 +87,7 @@ const MENU_ITEMS = [
 const KEY_TITLES: Record<string, string> = {
   dashboard: '仪表盘', products: '产品管理', categories: '系列管理', news: '新闻管理',
   banners: '轮播图管理', about: '关于我们', messages: '消息管理', intents: '团购意向管理',
-  users: '用户管理', admins: '管理员管理', departments: '部门管理', roles: '角色管理',
+  personnel: '人员管理',
   settings: '系统设置',
 }
 

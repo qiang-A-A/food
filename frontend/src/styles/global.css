@@ -162,3 +162,14 @@ button:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---- 富文本内容自适应（产品说明/新闻正文弹窗与页面）----
+   图片拖拽 resize 后存 style="width:X%"，此规则保证任何容器内不溢出；
+   iframe 视频同理限制最大宽度。 */
+.rich-text img {
+  max-width: 100%;
+  height: auto;
+}
+.rich-text iframe {
+  max-width: 100%;
+}

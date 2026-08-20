@@ -71,24 +71,23 @@ export function Carousel({ slides, autoMs = 6000 }: CarouselProps) {
             pointerEvents: i === index ? 'auto' : 'none',
           }}
         >
-          {/* 背景（SVG 插画或图片）——link_url 存在时整屏可点击跳转（需求 #4） */}
-          {s.link ? (
+          {/* 整屏链接（link_url 存在时，背景+标语整体可点击跳转，需求 #4/#4修复）
+              标语层 pointer-events:none 不再遮挡链接；箭头/指示点 zIndex 3 仍可点 */}
+          {s.link && (
             <a
               href={s.link}
               aria-label={s.slogan}
-              style={{ position: 'absolute', inset: 0, display: 'block', textDecoration: 'none' }}
+              style={{ position: 'absolute', inset: 0, display: 'block', textDecoration: 'none', zIndex: 1 }}
               onClick={(e) => e.stopPropagation()}
-            >
-              {s.bg}
-            </a>
-          ) : (
-            <div style={{ position: 'absolute', inset: 0 }}>{s.bg}</div>
+            />
           )}
-          {/* 标语层（居中） */}
+          {/* 背景（SVG 插画或图片） */}
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 1 }}>{s.bg}</div>
+          {/* 标语层（居中，不拦截点击——点击穿透到链接） */}
           <div
             style={{
               position: 'relative',
-              zIndex: 2,
+              zIndex: 1,
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -96,6 +95,7 @@ export function Carousel({ slides, autoMs = 6000 }: CarouselProps) {
               justifyContent: 'center',
               textAlign: 'center',
               padding: '0 24px',
+              pointerEvents: 'none',
             }}
           >
             <h2 style={{ fontFamily: 'var(--font-title)', fontSize: 'clamp(32px,5vw,56px)', fontWeight: 900, letterSpacing: 10, color: '#F6ECD7', margin: 0 }}>

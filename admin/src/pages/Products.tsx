@@ -82,11 +82,13 @@ export default function Products() {
 
   useEffect(load, [load])
 
-  // 保存产品排序（需求 #2：失焦/回车提交，前台列表按 sort_order 自动重排）
+  // 保存产品排序（需求 #2：输入即保存，本地回显 + 前台按 sort_order 自动重排）
   const saveSort = async (id: number, sort_order: number) => {
+    // 本地即时回显（受控 InputNumber）
+    setList((prev) => prev.map((p) => (p.id === id ? { ...p, sort_order } : p)))
     try {
       await http.put(`${adminApi.products}/${id}`, { sort_order })
-      message.success('排序已保存')
+      // 成功静默（避免每次输入弹提示）；失败报错并重载回滚
     } catch (e: any) {
       message.error(e.message || '排序保存失败')
       load()
@@ -215,12 +217,11 @@ export default function Products() {
     { title: '精选', dataIndex: 'is_featured', width: 70, render: (v) => <FeaturedTag featured={v} /> },
     {
       title: '排序', dataIndex: 'sort_order', width: 90,
-      // 需求 #2：内联排序输入，失焦保存（前端顺序即时生效，前台按 sort_order 展示）
+      // 需求 #2：输入即保存（onChange 直接提交，受控回显）
       render: (_, r) => (
         <InputNumber
-          size="small" min={0} max={999} defaultValue={r.sort_order}
-          onBlur={(e) => saveSort(r.id, Number(e.target.value ?? 0))}
-          onPressEnter={(e) => saveSort(r.id, Number((e.target as HTMLInputElement).value ?? 0))}
+          size="small" min={0} max={999} value={r.sort_order}
+          onChange={(v) => saveSort(r.id, v ?? 0)}
           style={{ width: 70 }}
         />
       ),

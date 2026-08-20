@@ -33,7 +33,11 @@ def paginate(
 
     # 可选排序
     if order_by is not None:
-        query = query.order_by(order_by)
+        # 可选排序（支持单个表达式或 tuple 多字段：(a.asc(), b.desc())）
+        if isinstance(order_by, tuple):
+            query = query.order_by(*order_by)
+        else:
+            query = query.order_by(order_by)
 
     # 总数：基于当前查询构建 count 子查询（order_by(None) 清除排序，避免无意义开销）
     count_query = select(func.count()).select_from(query.order_by(None).subquery())

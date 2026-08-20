@@ -86,7 +86,8 @@ def admin_list_products(
     if is_featured is not None:
         query = query.where(Product.is_featured.is_(is_featured))
 
-    data = paginate(db, query, page, page_size, order_by=Product.created_at.desc())
+    # 排序：sort_order 升序 + 创建时间倒序（与前台一致，后台改排序立即可见，需求 #2）
+    data = paginate(db, query, page, page_size, order_by=(Product.sort_order.asc(), Product.created_at.desc()))
     return ok({
         "items": [product_to_out(p) for p in data["items"]],
         "total": data["total"], "page": data["page"],

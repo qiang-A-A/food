@@ -1,8 +1,10 @@
 # =============================================================================
 # app/services/intent_service.py — 团购意向状态机
 # -----------------------------------------------------------------------------
-# 功能：实现意向状态流转规则（开发技术文档 §9.3）：
-#       pending → contacted → deal/closed；pending → closed（直接关闭）。
+# 功能：实现意向状态流转规则（开发技术文档 §9.3 + 2026-08-20 扩展）：
+#       pending → contacted → deal/closed；pending → closed（直接关闭）；
+#       用户撤销：pending/contacted → revoked（已撤销）；
+#       revoked/deal 终态仅可删除（进回收站）；deleted 仅可恢复/永久删除。
 #       非法流转（如 deal → pending）抛 422 状态流转非法。
 # =============================================================================
 
@@ -13,11 +15,16 @@ from app.utils.errors import AppError
 
 # 状态机合法流转表：{当前状态: {允许的下一个状态集合}}
 ALLOWED_TRANSITIONS = {
-    "pending": {"contacted", "closed"},   # 待跟进 → 已联系 / 直接关闭
-    "contacted": {"deal", "closed"},      # 已联系 → 已成交 / 已关闭
-    "deal": set(),                        # 终态：已成交（不可再流转）
-    "closed": set(),                      # 终态：已关闭
+    "pending": {"contacted", "closed", "revoked"},  # 待跟进 → 已联系/直接关闭/用户撤销
+    "contacted": {"deal", "closed", "revoked"},     # 已联系 → 已成交/已关闭/用户撤销
+    "deal": set(),                                  # 终态：已成交（仅可删除）
+    "closed": set(),                                # 终态：已关闭
+    "revoked": set(),                               # 终态：已撤销（仅可删除）
+    "deleted": set(),                               # 回收站内（仅可恢复/永久删除）
 }
+
+# 正常列表展示的状态（回收站外）；其余（deleted）在回收站展示
+ACTIVE_STATUSES = {"pending", "contacted", "deal", "closed", "revoked"}
 
 
 def transition(db: Session, intent_id: int, target_status: str) -> PurchaseIntent:

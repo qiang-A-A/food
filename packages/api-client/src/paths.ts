@@ -25,6 +25,8 @@ export const userApi = {
   password: '/api/user/password',              // 修改密码
   avatar: '/api/user/avatar',                  // 修改头像（上传/默认头像库）
   intents: '/api/user/intents',                // 我的意向（GET/POST）
+  intentRevoke: (id: number) => `/api/user/intents/${id}/revoke`,  // 撤销意向
+  intentDelete: (id: number) => `/api/user/intents/${id}`,         // 删除我的意向
   messages: '/api/user/messages',              // 我的聊天记录（GET/POST）
   messagesUnread: '/api/user/messages/unread', // 我的未读消息数
 }
@@ -48,6 +50,9 @@ export const adminApi = {
   banners: '/api/admin/banners',               // 轮播图管理
   about: '/api/admin/about',                   // 关于我们更新
   intents: '/api/admin/intents',               // 团购意向管理
+  intentTrash: '/api/admin/intents/trash',     // 意向回收站（列表）
+  intentRestore: (id: number) => `/api/admin/intents/${id}/restore`,   // 意向恢复
+  intentPermanent: (id: number) => `/api/admin/intents/${id}/permanent`, // 意向永久删除
   messages: '/api/admin/messages',             // 消息管理（会话/聊天/回复）
   messagesConversations: '/api/admin/messages/conversations', // 会话列表
   messagesUnread: '/api/admin/messages/unread-count',         // 未读总数（角标）

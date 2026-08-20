@@ -2,12 +2,13 @@
 // src/pages/Intents.tsx — 团购意向管理（B-11）
 // -----------------------------------------------------------------------------
 // 功能：意向表格（提交用户手机号/昵称/公司/需求/数量/来源/状态/时间）+
-//       详情弹窗 + 状态流转（待跟进→已联系→已成交/已关闭）+ 筛选搜索。
+//       详情弹窗（来源显示「产品详情（产品名）」）+ 状态流转（待跟进→已联系
+//       →已成交/已关闭；支持用户撤销的已撤销态）+ 详情删除（进回收站）。
 // 数据：GET /api/admin/intents、GET /{id}、PUT /{id}（状态流转）、DELETE。
 // =============================================================================
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Descriptions, Input, Modal, Select, Space, Table, message } from 'antd'
+import { Button, Descriptions, Input, Modal, Popconfirm, Select, Space, Table, message } from 'antd'
 import { EyeOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 
@@ -23,14 +24,20 @@ interface IntentRow {
   requirement: string | null
   quantity_range: string | null
   source: string
+  product_id: number | null
+  product_name: string | null
   status: string
   created_at: string
   user_phone: string | null
   user_nickname: string | null
 }
 
-// 来源文案映射
+// 来源文案映射（source=product 且有产品名时显示「产品详情（产品名）」）
 const SOURCE_TEXT: Record<string, string> = { contact: '联系我们', customize: '礼盒定制', product: '产品详情' }
+
+// 来源渲染：product 来源带产品名（需求 #4）
+const renderSource = (r: { source: string; product_name: string | null }) =>
+  r.source === 'product' && r.product_name ? `产品详情（${r.product_name}）` : (SOURCE_TEXT[r.source] ?? r.source)
 
 const PAGE_SIZE = 10
 
@@ -65,11 +72,22 @@ export default function Intents() {
     } catch (e: any) { message.error(e.message) }
   }
 
-  // 状态流转（状态机：pending→contacted→deal/closed；pending→closed）
+  // 状态流转（状态机：pending→contacted→deal/closed；用户撤销显示 revoked）
   const transition = async (row: IntentRow, status: string) => {
     try {
       await http.put(`${adminApi.intents}/${row.id}`, { status })
       message.success('状态已更新')
+      setDetail(null)
+      setDetailOpen(false)
+      load()
+    } catch (e: any) { message.error(e.message) }
+  }
+
+  // 删除意向（任意状态 → 回收站）
+  const removeIntent = async (id: number) => {
+    try {
+      await http.delete(`${adminApi.intents}/${id}`)
+      message.success('意向已删除，可在回收站恢复')
       setDetail(null)
       setDetailOpen(false)
       load()
@@ -86,7 +104,7 @@ export default function Intents() {
     { title: '公司', dataIndex: 'company', ellipsis: true, render: (v) => v || '—' },
     { title: '需求', dataIndex: 'requirement', ellipsis: true, render: (v) => v || '—' },
     { title: '数量', dataIndex: 'quantity_range', width: 90, render: (v) => v || '—' },
-    { title: '来源', dataIndex: 'source', width: 90, render: (v) => SOURCE_TEXT[v] ?? v },
+    { title: '来源', dataIndex: 'source', width: 140, render: (_, r) => renderSource(r) },
     { title: '状态', dataIndex: 'status', width: 90, render: (v) => <IntentStatusTag status={v} /> },
     { title: '提交时间', dataIndex: 'created_at', width: 150, render: (v) => (v || '').slice(0, 16) },
     { title: '操作', width: 100, fixed: 'right', render: (_, r) => <Button size="small" icon={<EyeOutlined />} onClick={() => openDetail(r)}>详情</Button> },
@@ -112,6 +130,7 @@ export default function Intents() {
             { value: 'contacted', label: '已联系' },
             { value: 'deal', label: '已成交' },
             { value: 'closed', label: '已关闭' },
+            { value: 'revoked', label: '已撤销' },
           ]}
         />
       </div>
@@ -131,31 +150,43 @@ export default function Intents() {
               <Descriptions.Item label="公司">{detail.company || '—'}</Descriptions.Item>
               <Descriptions.Item label="需求">{detail.requirement || '—'}</Descriptions.Item>
               <Descriptions.Item label="数量区间">{detail.quantity_range || '—'}</Descriptions.Item>
-              <Descriptions.Item label="来源">{SOURCE_TEXT[detail.source] ?? detail.source}</Descriptions.Item>
+              {/* 需求 #4：来源旁显示产品名称（产品详情（产品名）） */}
+              <Descriptions.Item label="来源">{renderSource(detail)}</Descriptions.Item>
               <Descriptions.Item label="当前状态"><IntentStatusTag status={detail.status} /></Descriptions.Item>
               <Descriptions.Item label="提交用户">{detail.user_phone ? `${detail.user_nickname ?? ''} (${detail.user_phone})` : '—'}</Descriptions.Item>
               <Descriptions.Item label="提交时间">{(detail.created_at || '').slice(0, 16)}</Descriptions.Item>
             </Descriptions>
 
             {/* 状态流转按钮（按状态机开放可选项） */}
-            <div style={{ fontSize: 13, color: '#333', marginBottom: 8 }}>状态流转：</div>
-            <Space>
-              {detail.status === 'pending' && (
-                <>
-                  <Button type="primary" onClick={() => transition(detail, 'contacted')}>标记已联系</Button>
-                  <Button onClick={() => transition(detail, 'closed')}>直接关闭</Button>
-                </>
-              )}
-              {detail.status === 'contacted' && (
-                <>
-                  <Button type="primary" style={{ background: '#52C41A', borderColor: '#52C41A' }} onClick={() => transition(detail, 'deal')}>标记已成交</Button>
-                  <Button danger onClick={() => transition(detail, 'closed')}>标记已关闭</Button>
-                </>
-              )}
-              {(detail.status === 'deal' || detail.status === 'closed') && (
-                <span style={{ color: '#999', fontSize: 13 }}>已结束（不可再流转）</span>
-              )}
-            </Space>
+            {detail.status !== 'revoked' && (
+              <>
+                <div style={{ fontSize: 13, color: '#333', marginBottom: 8 }}>状态流转：</div>
+                <Space>
+                  {detail.status === 'pending' && (
+                    <>
+                      <Button type="primary" onClick={() => transition(detail, 'contacted')}>标记已联系</Button>
+                      <Button onClick={() => transition(detail, 'closed')}>直接关闭</Button>
+                    </>
+                  )}
+                  {detail.status === 'contacted' && (
+                    <>
+                      <Button type="primary" style={{ background: '#52C41A', borderColor: '#52C41A' }} onClick={() => transition(detail, 'deal')}>标记已成交</Button>
+                      <Button danger onClick={() => transition(detail, 'closed')}>标记已关闭</Button>
+                    </>
+                  )}
+                  {(detail.status === 'deal' || detail.status === 'closed') && (
+                    <span style={{ color: '#999', fontSize: 13 }}>已结束（不可再流转）</span>
+                  )}
+                </Space>
+              </>
+            )}
+
+            {/* 需求 #7：详情支持删除（任意状态 → 回收站） */}
+            <div style={{ marginTop: 14, borderTop: '1px solid #F0F0F0', paddingTop: 12 }}>
+              <Popconfirm title="确定删除该意向吗？" description="删除后进入回收站，可恢复" onConfirm={() => removeIntent(detail.id)} okText="删除" cancelText="取消" okButtonProps={{ danger: true }}>
+                <Button danger size="small">删除意向</Button>
+              </Popconfirm>
+            </div>
           </>
         )}
       </Modal>

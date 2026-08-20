@@ -2,19 +2,22 @@
 // src/components/StatusTag.tsx — 状态标签（品牌语义色）
 // -----------------------------------------------------------------------------
 // 功能：业务状态统一 Tag 渲染（UI/UX §5.3 Tag 规范 + §3.1.3 语义色）：
-//       · 团购意向四态：待跟进 金 / 已联系 蓝 / 已成交 绿 / 已关闭 灰
+//       · 团购意向六态：待跟进 金 / 已联系 蓝 / 已成交 绿 / 已关闭 灰 /
+//         已撤销 红 / 已删除 灰
 //       · 产品精选：金「精选」；新闻置顶：红「置顶」
 //       · 通用启用/停用：绿/灰
 // =============================================================================
 
 import { Tag } from 'antd'
 
-// 意向状态 → 颜色与文案
+// 意向状态 → 颜色与文案（2026-08-20 扩展：revoked/deleted）
 const INTENT_STATUS: Record<string, { color: string; text: string }> = {
   pending: { color: 'gold', text: '待跟进' },
   contacted: { color: 'blue', text: '已联系' },
   deal: { color: 'green', text: '已成交' },
   closed: { color: 'default', text: '已关闭' },
+  revoked: { color: 'red', text: '已撤销' },
+  deleted: { color: 'default', text: '已删除' },
 }
 
 // 产品发布状态 → 颜色与文案（草稿仅后台可见）

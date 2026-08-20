@@ -100,6 +100,7 @@ class IntentIn(BaseModel):
     requirement: str | None = Field(None, description="采购/定制需求")
     quantity_range: str | None = Field(None, max_length=50)
     source: str = Field("contact", pattern=r"^(contact|customize|product)$", description="来源页")
+    product_id: int | None = Field(None, description="来源产品（source=product 时必带）")
 
 
 class IntentOut(BaseModel):
@@ -112,6 +113,8 @@ class IntentOut(BaseModel):
     requirement: str | None = None
     quantity_range: str | None = None
     source: str
+    product_id: int | None = None
+    product_name: str | None = None  # 来源产品名（source=product 时展示）
     status: str
     created_at: datetime
 
@@ -124,8 +127,8 @@ class IntentAdminOut(IntentOut):
 
 
 class IntentStatusIn(BaseModel):
-    """意向状态流转请求体：{"status": "contacted"}。"""
-    status: str = Field(..., pattern=r"^(pending|contacted|deal|closed)$")
+    """意向状态流转请求体：{"status": "contacted"}（管理侧正常流转/撤销）。"""
+    status: str = Field(..., pattern=r"^(pending|contacted|deal|closed|revoked)$")
 
 
 # ============================================================

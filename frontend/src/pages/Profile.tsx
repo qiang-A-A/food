@@ -29,10 +29,16 @@ const DEFAULT_AVATARS = [
 ]
 
 // 我的意向项
-interface MyIntent { id: number; name: string; phone: string; company: string | null; requirement: string | null; quantity_range: string | null; source: string; status: string; created_at: string }
+interface MyIntent { id: number; name: string; phone: string; company: string | null; requirement: string | null; quantity_range: string | null; source: string; product_name: string | null; status: string; created_at: string }
 
 // 状态文案映射（后台同义，前台展示）
-const STATUS_TEXT: Record<string, string> = { pending: '待跟进', contacted: '已联系', deal: '已成交', closed: '已关闭' }
+const STATUS_TEXT: Record<string, string> = { pending: '待跟进', contacted: '已联系', deal: '已成交', closed: '已关闭', revoked: '已撤销' }
+
+// 意向操作按钮样式（撤销/删除，金色描边小按钮）
+const opBtnStyle: React.CSSProperties = {
+  padding: '5px 14px', fontSize: 12, borderRadius: 2, cursor: 'pointer',
+  background: 'transparent', border: '1px solid var(--gold)', color: 'var(--gold-dark)',
+}
 
 type Tab = 'info' | 'avatar' | 'password' | 'intents' | 'messages'
 
@@ -78,6 +84,31 @@ export default function Profile() {
       setLogin(token, nick || '宫阙会员', profile?.avatar ?? '')
       showToast('ok', '资料已保存')
     } catch (e: any) { setError(e.message) }
+  }
+
+  // 刷新我的意向列表
+  const reloadIntents = () => {
+    http.get(userApi.intents).then((res: any) => setIntents(res.data.items ?? [])).catch(() => showToast('err', '意向记录加载失败'))
+  }
+
+  // 撤销意向（待跟进/已联系 → 已撤销）
+  const handleRevokeIntent = async (id: number) => {
+    if (!window.confirm('确定撤销该意向吗？撤销后状态将变为「已撤销」')) return
+    try {
+      await http.post(userApi.intentRevoke(id))
+      showToast('ok', '意向已撤销')
+      reloadIntents()
+    } catch (e: any) { showToast('err', e.message || '撤销失败') }
+  }
+
+  // 删除意向（已撤销/已成交 → 回收站）
+  const handleDeleteIntent = async (id: number) => {
+    if (!window.confirm('确定删除该意向吗？删除后可在后台回收站恢复')) return
+    try {
+      await http.delete(userApi.intentDelete(id))
+      showToast('ok', '意向已删除')
+      reloadIntents()
+    } catch (e: any) { showToast('err', e.message || '删除失败') }
   }
 
   // 修改密码
@@ -218,16 +249,33 @@ export default function Profile() {
             {tab === 'intents' && (
               <>
                 <Title>我的意向</Title>
+                <div style={{ fontSize: 12.5, color: 'var(--text-weak)', marginBottom: 12 }}>
+                  待跟进/已联系的意向可撤销；已撤销/已成交的意向可删除（删除后可在后台回收站找回）
+                </div>
                 {intents.length === 0 && <div style={{ textAlign: 'center', padding: 30, color: 'var(--text-weak)', fontSize: 13 }}>暂无意向记录</div>}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
                   {intents.map((it) => (
                     <div key={it.id} style={{ border: '1px solid var(--line)', borderRadius: 2, padding: 14, fontSize: 13 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <b style={{ color: 'var(--red-3)' }}>{it.requirement || '意向咨询'}</b>
-                        <span style={{ color: '#52C41A' }}>{STATUS_TEXT[it.status] ?? it.status}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <b style={{ color: 'var(--red-3)' }}>{it.requirement || '意向咨询'}</b>
+                          {it.product_name && (
+                            <div style={{ marginTop: 3, fontSize: 12, color: '#A8863F' }}>来源产品：{it.product_name}</div>
+                          )}
+                        </div>
+                        <span style={{ color: it.status === 'revoked' ? '#8C1F28' : '#52C41A', flexShrink: 0 }}>{STATUS_TEXT[it.status] ?? it.status}</span>
                       </div>
                       <div style={{ marginTop: 6, color: 'var(--text-weak)' }}>
                         {it.quantity_range || '数量面议'} · {(it.created_at || '').slice(0, 10)}
+                      </div>
+                      {/* 操作：待跟进/已联系 → 撤销；已撤销/已成交 → 删除 */}
+                      <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+                        {(it.status === 'pending' || it.status === 'contacted') && (
+                          <button onClick={() => handleRevokeIntent(it.id)} style={opBtnStyle}>撤销意向</button>
+                        )}
+                        {(it.status === 'revoked' || it.status === 'deal') && (
+                          <button onClick={() => handleDeleteIntent(it.id)} style={{ ...opBtnStyle, borderColor: '#D9B8B8', color: '#8C1F28' }}>删除</button>
+                        )}
                       </div>
                     </div>
                   ))}

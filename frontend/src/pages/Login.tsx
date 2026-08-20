@@ -2,6 +2,7 @@
 // src/pages/Login.tsx — 登录页（PRD F-6）
 // -----------------------------------------------------------------------------
 // 功能：宣纸纸感底 + 居中登录卡（手机号+密码）→ 登录成功跳转个人中心；
+//       左上角「返回首页」按钮（从任意入口进入登录页均可退回首页）；
 //       角落低调「管理员入口」链接（同页跳转后台登录，不新开窗口，PRD B-1）。
 // 数据：POST /api/user/login。
 // =============================================================================
@@ -49,6 +50,22 @@ export default function Login() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 16px', position: 'relative' }}>
+      {/* 返回首页（左上角，金色描边弱化按钮） */}
+      <Link
+        to="/"
+        style={{
+          position: 'absolute', top: 18, left: 24,
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          fontSize: 13, color: 'var(--gold-dark)', textDecoration: 'none',
+          border: '1px solid var(--gold)', borderRadius: 2, padding: '6px 14px',
+          opacity: .85, transition: 'all .2s',
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(201,169,106,.12)' }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+      >
+        ‹ 返回首页
+      </Link>
+
       {/* 登录卡：宣纸白底 + 顶部金红金渐变条（UI/UX §3.1.2 认证卡） */}
       <div style={{ width: '100%', maxWidth: 400, background: '#FFFDF7', borderRadius: 2, boxShadow: 'var(--shadow-card)', position: 'relative' }}>
         <div style={{ height: 4, background: 'var(--grad-authbar)', borderRadius: '2px 2px 0 0' }} />

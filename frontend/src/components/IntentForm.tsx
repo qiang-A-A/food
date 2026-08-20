@@ -17,10 +17,11 @@ import { useUiStore } from '@/store/ui'
 
 interface IntentFormProps {
   source: 'contact' | 'customize' | 'product'  // 来源页（后台据此区分入口）
-  fields?: ('company' | 'quantity')[]          // 需要展示的附加字段（联系=公司+数量；定制=仅需求）
+  fields?: ('company' | 'quantity')[]          // 需要展示的附加字段（联系=公司+数量；定制=公司）
+  companyRequired?: boolean                    // 公司名称是否必填（定制服务页）
 }
 
-export function IntentForm({ source, fields = ['company', 'quantity'] }: IntentFormProps) {
+export function IntentForm({ source, fields = ['company', 'quantity'], companyRequired = false }: IntentFormProps) {
   const isLogin = useAuthStore((s) => s.isLogin)
   const openLogin = useUiStore((s) => s.openLogin)
   const showToast = useUiStore((s) => s.showToast)
@@ -37,9 +38,10 @@ export function IntentForm({ source, fields = ['company', 'quantity'] }: IntentF
   // 提交意向
   const handleSubmit = async () => {
     setError('')
-    // 前端校验：姓名必填 + 11 位手机号
+    // 前端校验：姓名必填 + 11 位手机号 + 公司名（定制页必填）
     if (!form.name.trim()) { setError('请填写姓名'); return }
     if (!/^1\d{10}$/.test(form.phone)) { setError('请填写 11 位手机号'); return }
+    if (companyRequired && !form.company.trim()) { setError('请填写公司名称'); return }
     setLoading(true)
     try {
       await http.post(userApi.intents, {
@@ -110,9 +112,11 @@ export function IntentForm({ source, fields = ['company', 'quantity'] }: IntentF
         <Field label="联系电话 *"><input type="tel" maxLength={11} value={form.phone} onChange={(e) => set('phone', e.target.value.replace(/\D/g, ''))} placeholder="11 位手机号" style={inputStyle} /></Field>
       </div>
 
-      {/* 公司名称（团购场景） */}
+      {/* 公司名称（团购场景必显；定制页必填） */}
       {fields.includes('company') && (
-        <Field label="公司名称"><input value={form.company} onChange={(e) => set('company', e.target.value)} placeholder="企业/机构名称（选填）" style={inputStyle} /></Field>
+        <Field label={companyRequired ? '公司名称 *' : '公司名称'}>
+          <input value={form.company} onChange={(e) => set('company', e.target.value)} placeholder={companyRequired ? '企业/机构名称（必填）' : '企业/机构名称（选填）'} style={inputStyle} />
+        </Field>
       )}
 
       {/* 需求描述 */}

@@ -66,7 +66,7 @@ export default function Customize() {
           <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-weak)', marginBottom: 16 }}>
             定制产品不展示统一报价，提交意向后由顾问一对一定制方案 · 起订量 50 盒起
           </div>
-          <IntentForm source="customize" fields={[]} />
+          <IntentForm source="customize" fields={['company']} companyRequired />
         </div>
 
         {/* 底部装饰（礼盒金线剪影） */}

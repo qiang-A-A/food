@@ -9,7 +9,7 @@
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.auth.deps import get_current_user
 from app.auth.jwt import create_token
@@ -135,6 +135,20 @@ def update_avatar(
 
 # ---------------- 我的意向（需登录） ----------------
 
+def intent_to_out(i: PurchaseIntent) -> IntentOut:
+    """意向 ORM → 用户侧输出模型（含来源产品名）。"""
+    return IntentOut.model_validate({
+        "id": i.id, "name": i.name, "phone": i.phone,
+        "company": i.company, "requirement": i.requirement,
+        "quantity_range": i.quantity_range,
+        "source": i.source,
+        "product_id": i.product_id,
+        "product_name": i.product.name if i.product else None,
+        "status": i.status,
+        "created_at": i.created_at,
+    })
+
+
 @router.get("/intents")
 def my_intents(
     page: int = 1,
@@ -142,14 +156,15 @@ def my_intents(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """我的意向列表：仅返回当前登录用户的团购/定制意向。"""
+    """我的意向列表：仅返回当前登录用户的团购/定制意向（含来源产品名）。"""
     query = (
         select(PurchaseIntent)
+        .options(joinedload(PurchaseIntent.product))
         .where(PurchaseIntent.user_id == user.id, PurchaseIntent.is_deleted.is_(False))
     )
     data = paginate(db, query, page, page_size, order_by=PurchaseIntent.created_at.desc())
     return ok({
-        "items": [IntentOut.model_validate(i) for i in data["items"]],
+        "items": [intent_to_out(i) for i in data["items"]],
         "total": data["total"], "page": data["page"],
         "page_size": data["page_size"], "pages": data["pages"],
     })
@@ -161,7 +176,8 @@ def create_intent(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """提交团购/定制意向（需登录）：user_id 强制取自 token（防越权）。"""
+    """提交团购/定制意向（需登录）：user_id 强制取自 token（防越权）；
+    product_id 记录来源产品（产品详情页「立即预约」携带）。"""
     intent = PurchaseIntent(
         user_id=user.id,          # 关键：来自登录态而非前端传参
         name=body.name,
@@ -170,6 +186,7 @@ def create_intent(
         requirement=body.requirement,
         quantity_range=body.quantity_range,
         source=body.source,       # contact / customize / product
+        product_id=body.product_id,  # 来源产品（source=product 时展示产品名）
         status="pending",         # 初始状态：待跟进
         created_by=str(user.id),
     )
@@ -177,6 +194,49 @@ def create_intent(
     db.commit()
     db.refresh(intent)
     return ok({"id": intent.id, "status": "pending"}, "提交成功，顾问将尽快与您联系")
+
+
+@router.post("/intents/{intent_id}/revoke")
+def revoke_intent(
+    intent_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """撤销我的意向（仅本人，且状态为待跟进/已联系 → 已撤销）。"""
+    intent = db.get(PurchaseIntent, intent_id)
+    if not intent or intent.is_deleted or intent.user_id != user.id:
+        raise AppError.not_found("意向不存在")
+    # 状态机校验：仅 pending/contacted 可撤销
+    if intent.status not in ("pending", "contacted"):
+        raise AppError.invalid_transition(
+            f"当前状态「{intent.status}」不可撤销（仅待跟进/已联系可撤销）"
+        )
+    intent.status = "revoked"
+    intent.updated_by = str(user.id)
+    db.commit()
+    return ok({"id": intent_id, "status": "revoked"}, "意向已撤销")
+
+
+@router.delete("/intents/{intent_id}")
+def delete_my_intent(
+    intent_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """删除我的意向（仅本人；已撤销/已成交的意向可删除 → 进回收站显示已删除）。"""
+    intent = db.get(PurchaseIntent, intent_id)
+    if not intent or intent.is_deleted or intent.user_id != user.id:
+        raise AppError.not_found("意向不存在")
+    # 需求：仅已撤销（revoked）与已成交（deal）可删除
+    if intent.status not in ("revoked", "deal"):
+        raise AppError.invalid_transition(
+            f"当前状态「{intent.status}」不可删除（仅已撤销/已成交可删除）"
+        )
+    intent.status = "deleted"
+    intent.is_deleted = True
+    intent.updated_by = str(user.id)
+    db.commit()
+    return ok(message="意向已删除")
 
 
 # ---------------- 咨询消息（需登录，与后台管理员聊天） ----------------

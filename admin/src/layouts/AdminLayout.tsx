@@ -64,7 +64,13 @@ const MENU_ITEMS = [
     ],
   },
   { key: 'messages', icon: <MessageOutlined />, label: '消息管理' },  // 未读角标在渲染时注入
-  { key: 'intents', icon: <ShoppingCartOutlined />, label: '团购意向管理' },
+  {
+    key: 'intents', icon: <ShoppingCartOutlined />, label: '团购意向管理',
+    children: [
+      { key: '/admin/intents', label: '意向列表' },
+      { key: '/admin/intents/trash', label: '回收站' },
+    ],
+  },
   {
     key: 'personnel', icon: <TeamOutlined />, label: '人员管理',
     children: [

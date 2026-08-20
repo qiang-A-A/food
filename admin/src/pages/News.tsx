@@ -4,6 +4,7 @@
 // 功能：新闻列表（搜索/置顶 Tag/上架 Switch/编辑/删除/新增）——编辑弹窗含
 //       TipTap 富文本编辑器（图片+视频嵌入，仅超管可插入视频）。
 // 数据：GET/POST /api/admin/news、PUT /{id}、PATCH status、DELETE。
+// 封面：内嵌上传按钮（复用 ImageUploader，单图）+ 保留手动填 URL 双入口。
 // =============================================================================
 
 import { useCallback, useEffect, useState } from 'react'
@@ -15,6 +16,7 @@ import dayjs from 'dayjs'
 import { http } from '@/api/http'
 import { adminApi } from '@tsgq/api-client'
 import { ConfirmDanger } from '@/components/ConfirmDanger'
+import { ImageUploader } from '@/components/ImageUploader'
 import { TopTag } from '@/components/StatusTag'
 import { RichTextEditor } from '@/components/RichTextEditor'
 
@@ -131,11 +133,9 @@ export default function News() {
           <Form.Item name="summary" label="摘要">
             <Input.TextArea rows={2} placeholder="列表页展示的摘要（选填）" maxLength={300} />
           </Form.Item>
-          {/* 审计修复：补封面字段——此前表单无 cover_image，编辑时后端
-              全量更新会将其重置为空（编辑一次新闻封面丢失），且无任何入口
-              设置封面。列表页/首页新闻卡展示依赖该字段。 */}
-          <Form.Item name="cover_image" label="封面图 URL">
-            <Input placeholder="通过上传获得 URL，或填 svg:news 占位（选填）" />
+          {/* 封面图：上传按钮 + 手动 URL 双入口（单图，首张即封面） */}
+          <Form.Item name="cover_image" label="封面图">
+            <CoverUploader />
           </Form.Item>
           <Form.Item name="publish_date" label="发布日期">
             <DatePicker showTime style={{ width: '100%' }} />
@@ -155,6 +155,32 @@ export default function News() {
       </Modal>
 
       <ConfirmDanger open={!!delTarget} title="删除新闻" content={`确定将「${delTarget?.title}」移入回收站吗？`} onOk={handleDelete} onCancel={() => setDelTarget(null)} />
+    </div>
+  )
+}
+
+// -----------------------------------------------------------------------------
+// CoverUploader — 新闻封面上传（桥接组件）
+// 功能：AntD Form 注入的是单个字符串值，ImageUploader 是数组受控组件，
+//       此处做转换：单图上传回填 URL；同时保留手动输入框（双入口）。
+// =============================================================================
+function CoverUploader({ value, onChange }: { value?: string | null; onChange?: (v: string | null) => void }) {
+  return (
+    <div>
+      {/* 上传按钮（max=1，上传后回填 URL） */}
+      <ImageUploader
+        value={value ? [value] : []}
+        max={1}
+        onChange={(urls) => onChange?.(urls[0] ?? null)}
+      />
+      {/* 手动 URL 输入（与上传值双向同步） */}
+      <Input
+        value={value ?? ''}
+        onChange={(e) => onChange?.(e.target.value || null)}
+        placeholder="或直接粘贴图片 URL（选填，可留空用占位图）"
+        style={{ marginTop: 8 }}
+        allowClear
+      />
     </div>
   )
 }

@@ -2,7 +2,8 @@
 // src/pages/Contact.tsx — 联系我们（PRD F-5）
 // -----------------------------------------------------------------------------
 // 功能：左卡片——联系方式（商务热线/邮箱/地址/微信二维码，来自 settings）；
-//       右卡片——企业团购意向表单（双态：仅登录提交，source=contact）。
+//       右卡片——门店地图（后台「联系方式设置」地图嵌入地址 map_url 渲染，
+//       2026-08-20 需求 #5：原提交团购意向表单移除）。
 // 数据：GET /api/public/contact。
 // =============================================================================
 
@@ -10,15 +11,14 @@ import { useEffect, useState } from 'react'
 
 import { http } from '@/api/http'
 import { publicApi } from '@tsgq/api-client'
-import { IntentForm } from '@/components/IntentForm'
 import { PageBanner } from '@/components/PageBanner'
-import { RuyiIcon } from '@/assets/symbols'
 
 interface ContactInfo {
   contact_phone: string | null
   contact_email: string | null
   contact_address: string | null
   contact_wechat_qr: string | null
+  map_url: string | null
 }
 
 export default function Contact() {
@@ -65,13 +65,23 @@ export default function Contact() {
             </div>
           </div>
 
-          {/* ===== 右：企业团购意向表单（双态） ===== */}
-          <div>
-            <IntentForm source="contact" fields={['company', 'quantity']} />
-            {/* 装饰 */}
-            <div style={{ textAlign: 'center', marginTop: 18, opacity: .35 }}>
-              <RuyiIcon style={{ width: 32 }} />
-            </div>
+          {/* ===== 右：门店地图（后台地图 API 设置 map_url 渲染，需求 #5） ===== */}
+          <div style={{ background: '#FFFDF7', border: '1px solid var(--line)', borderRadius: 2, padding: 24, minHeight: 320, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontFamily: 'var(--font-title)', fontSize: 20, fontWeight: 700, color: 'var(--red-3)', letterSpacing: 2, marginBottom: 14 }}>门店位置</div>
+            {info?.map_url ? (
+              <iframe
+                src={info.map_url}
+                title="门店地图"
+                style={{ flex: 1, width: '100%', minHeight: 320, border: '1px solid var(--line)', borderRadius: 2 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+            ) : (
+              <div style={{ flex: 1, minHeight: 260, border: '1px dashed var(--gold)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'var(--text-weak)', background: 'rgba(201,169,106,.06)' }}>
+                地图待配置（后台「联系方式设置」填写地图嵌入地址）
+              </div>
+            )}
           </div>
         </div>
       </div>

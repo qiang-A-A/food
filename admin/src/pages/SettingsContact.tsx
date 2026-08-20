@@ -50,6 +50,9 @@ export default function SettingsContact() {
           <Form.Item name="contact_wechat_qr" label="微信二维码">
             <SingleImageUpload placeholder="或直接粘贴二维码图片 URL（选填）" />
           </Form.Item>
+          <Form.Item name="map_url" label="地图嵌入地址" extra="高德/腾讯地图「分享 → 嵌入地图 iframe」复制 src 链接，联系我们页渲染（需求 #5）">
+            <Input placeholder="如 https://uri.amap.com/marker?... 或腾讯地图 embed 链接" />
+          </Form.Item>
           <Form.Item name="footer_icp" label="ICP 备案号（页脚）">
             <Input placeholder="如 京ICP备xxxxxxxx号" />
           </Form.Item>

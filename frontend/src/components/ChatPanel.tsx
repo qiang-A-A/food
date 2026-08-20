@@ -36,7 +36,9 @@ export function ChatPanel({ productId, height }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [loadError, setLoadError] = useState('')
-  const bottomRef = useRef<HTMLDivElement>(null)
+  // 消息区滚动容器（修复：自动滚动仅作用于本容器，不再 scrollIntoView 带动整个页面——
+  // 个人中心「消息记录」点击后页面不再自动滚到底部，需求 #6）
+  const scrollRef = useRef<HTMLDivElement>(null)
   const nickname = useAuthStore((s) => s.nickname) || '我'
 
   // 拉取聊天记录（首次打开即标记已读，后续轮询增量）
@@ -57,9 +59,10 @@ export function ChatPanel({ productId, height }: ChatPanelProps) {
     return () => clearInterval(timer)
   }, [])
 
-  // 新消息到达时自动滚动到底部
+  // 新消息到达时自动滚动到底部（仅滚动消息容器，不带动页面）
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }, [messages])
 
   // 发送消息：清空输入 → 立即刷新（不等下一轮询）
@@ -94,8 +97,8 @@ export function ChatPanel({ productId, height }: ChatPanelProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: height ?? 520 }}>
-      {/* ===== 消息区 ===== */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '14px 12px', background: '#F7F1E3' }}>
+      {/* ===== 消息区（scrollRef：自动滚动只作用于本容器，不带动页面） ===== */}
+      <div ref={scrollRef} style={{ flex: 1, overflow: 'auto', padding: '14px 12px', background: '#F7F1E3' }}>
         {loadError && (
           <div style={{ textAlign: 'center', color: '#C0392B', fontSize: 12, margin: '8px 0' }}>{loadError}</div>
         )}
@@ -133,7 +136,7 @@ export function ChatPanel({ productId, height }: ChatPanelProps) {
             </div>
           </div>
         ))}
-        <div ref={bottomRef} />
+        <div style={{ height: 1 }} />
       </div>
 
       {/* ===== 输入区 ===== */}

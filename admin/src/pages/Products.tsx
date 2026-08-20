@@ -9,7 +9,7 @@
 // =============================================================================
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Form, Input, Modal, Select, Space, Switch, Table, message } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Select, Space, Switch, Table, message } from 'antd'
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 
@@ -34,6 +34,7 @@ interface ProductRow {
   is_featured: boolean
   publish_status: string
   spec: string | null
+  sort_order: number
 }
 
 const PAGE_SIZE = 10
@@ -80,6 +81,17 @@ export default function Products() {
   }, [page, keyword, catFilter, statusFilter])
 
   useEffect(load, [load])
+
+  // 保存产品排序（需求 #2：失焦/回车提交，前台列表按 sort_order 自动重排）
+  const saveSort = async (id: number, sort_order: number) => {
+    try {
+      await http.put(`${adminApi.products}/${id}`, { sort_order })
+      message.success('排序已保存')
+    } catch (e: any) {
+      message.error(e.message || '排序保存失败')
+      load()
+    }
+  }
 
   // 打开新增/编辑弹窗
   const openModal = (row?: ProductRow) => {
@@ -184,14 +196,14 @@ export default function Products() {
   // 表格列
   const columns: ColumnsType<ProductRow> = [
     {
-      title: '产品', dataIndex: 'name',
+      title: '产品', dataIndex: 'name', width: 240,  // 列宽收窄为原弹性宽度的 3/4（需求 #3）
       render: (_, r) => (
         <Space>
           {r.cover_image
             ? <img src={r.cover_image} alt="" style={{ width: 40, height: 30, objectFit: 'cover', borderRadius: 2, border: '1px solid #E8E8E8' }} />
             : <div style={{ width: 40, height: 30, background: '#8C1F28', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#F6ECD7' }}>宫阙</div>}
           <div>
-            <div style={{ fontWeight: 500 }}>{r.name}</div>
+            <div style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>{r.name}</div>
             <div style={{ fontSize: 12, color: '#999' }}>{r.product_no}</div>
           </div>
         </Space>
@@ -201,6 +213,18 @@ export default function Products() {
     { title: '品类', dataIndex: 'category_name', width: 100 },
     { title: '最低价', dataIndex: 'price', width: 90, render: (v) => (v ? `${v} 起` : '面议') },
     { title: '精选', dataIndex: 'is_featured', width: 70, render: (v) => <FeaturedTag featured={v} /> },
+    {
+      title: '排序', dataIndex: 'sort_order', width: 90,
+      // 需求 #2：内联排序输入，失焦保存（前端顺序即时生效，前台按 sort_order 展示）
+      render: (_, r) => (
+        <InputNumber
+          size="small" min={0} max={999} defaultValue={r.sort_order}
+          onBlur={(e) => saveSort(r.id, Number(e.target.value ?? 0))}
+          onPressEnter={(e) => saveSort(r.id, Number((e.target as HTMLInputElement).value ?? 0))}
+          style={{ width: 70 }}
+        />
+      ),
+    },
     {
       title: '发布状态', dataIndex: 'publish_status', width: 110,
       render: (v: string, r) => (
@@ -368,6 +392,9 @@ export default function Products() {
             </Form.Item>
             <Form.Item name="is_featured" label="精选（首页展示）" valuePropName="checked" style={{ marginBottom: 8 }}>
               <Switch />
+            </Form.Item>
+            <Form.Item name="sort_order" label="排序（越小越前）" initialValue={0} style={{ marginBottom: 8 }}>
+              <InputNumber min={0} max={999} style={{ width: 110 }} />
             </Form.Item>
           </div>
 

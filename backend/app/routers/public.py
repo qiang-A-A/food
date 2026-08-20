@@ -231,5 +231,5 @@ def get_contact(db: Session = Depends(get_db)):
             clean[k] = v
     # 固定字段映射（缺失时返回 None）
     keys = ["contact_phone", "contact_email", "contact_address",
-            "contact_wechat_qr", "footer_icp", "footer_sc_license"]
+            "contact_wechat_qr", "map_url", "footer_icp", "footer_sc_license"]
     return ok({k: clean.get(k) for k in keys})

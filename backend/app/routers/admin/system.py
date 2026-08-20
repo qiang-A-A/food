@@ -426,10 +426,10 @@ def _upsert_settings(db: Session, data: dict, operator: str) -> None:
 
 @router.get("/settings/contact")
 def admin_get_contact_settings(db: Session = Depends(get_db)):
-    """联系方式设置读取。"""
+    """联系方式设置读取（含地图嵌入地址 map_url）。"""
     data = _get_settings_dict(db)
     keys = ["contact_phone", "contact_email", "contact_address",
-            "contact_wechat_qr", "footer_icp", "footer_sc_license"]
+            "contact_wechat_qr", "map_url", "footer_icp", "footer_sc_license"]
     return ok({k: data.get(k) for k in keys})
 
 

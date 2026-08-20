@@ -90,12 +90,13 @@ export default function Home() {
 
   return (
     <div>
-      {/* ===== Hero 轮播 ===== */}
+      {/* ===== Hero 轮播（link_url 存在时点击跳转，需求 #4） ===== */}
       <Carousel
         slides={banners.map((b) => ({
           bg: <HeroScene scene={b.image} />,
           slogan: '天上宫阙 · 御礼天成',
           sub: b.title || '宫廷御制糕点 · 高奢商务礼赠',
+          link: b.link_url || undefined,
         }))}
       />
 

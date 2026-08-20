@@ -14,6 +14,8 @@ interface Slide {
   slogan: string
   /** 副标语（可选） */
   sub?: string
+  /** 跳转链接（后台轮播图 link_url，点击整屏跳转；可空不跳） */
+  link?: string
 }
 
 interface CarouselProps {
@@ -69,8 +71,19 @@ export function Carousel({ slides, autoMs = 6000 }: CarouselProps) {
             pointerEvents: i === index ? 'auto' : 'none',
           }}
         >
-          {/* 背景（SVG 插画或图片） */}
-          <div style={{ position: 'absolute', inset: 0 }}>{s.bg}</div>
+          {/* 背景（SVG 插画或图片）——link_url 存在时整屏可点击跳转（需求 #4） */}
+          {s.link ? (
+            <a
+              href={s.link}
+              aria-label={s.slogan}
+              style={{ position: 'absolute', inset: 0, display: 'block', textDecoration: 'none' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {s.bg}
+            </a>
+          ) : (
+            <div style={{ position: 'absolute', inset: 0 }}>{s.bg}</div>
+          )}
           {/* 标语层（居中） */}
           <div
             style={{

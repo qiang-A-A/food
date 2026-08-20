@@ -478,6 +478,7 @@ class ContactSettingsIn(BaseModel):
     contact_email: str | None = None
     contact_address: str | None = None
     contact_wechat_qr: str | None = None
+    map_url: str | None = None  # 地图嵌入地址（高德/腾讯 iframe URL，联系我们页渲染）
     footer_icp: str | None = None
     footer_sc_license: str | None = None
 

@@ -26,8 +26,18 @@ interface HomeData {
   about_brief: string
 }
 
-// Hero 轮播场景插画（SVG 占位，上线替换真实摄影图并叠加红黑蒙版）
+// Hero 轮播场景（svg: 占位 → SVG 插画；真实图片 URL → 渲染图片铺满）
 function HeroScene({ scene }: { scene: string }) {
+  // 真实图片（后台上传/URL 设置，非 svg: 占位标记）→ 直接渲染图片铺满
+  // 修复：此前所有非 svg: 占位内容落入默认插画分支，后台设置的轮播图片
+  //       在前台永远显示为红墙插画（"轮播图没有同步"根因）
+  if (!scene.startsWith('svg:')) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, background: '#3A0B0F' }}>
+        <img src={scene} alt="轮播图" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+      </div>
+    )
+  }
   // 依据 banner.image 的占位标记渲染不同插画组合
   if (scene.includes('hero-scene-2')) {
     // 场景二：宫廷糕点陈设（礼盒 + 酥点 + 祥云）

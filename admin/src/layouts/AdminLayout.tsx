@@ -61,6 +61,7 @@ const MENU_ITEMS = [
       { key: '/admin/about/story', label: '品牌故事' },
       { key: '/admin/about/honors', label: '荣誉资质' },
       { key: '/admin/about/selling-points', label: '核心卖点' },
+      { key: '/admin/about/workshop', label: '工厂工坊' },
     ],
   },
   { key: 'messages', icon: <MessageOutlined />, label: '消息管理' },  // 未读角标在渲染时注入

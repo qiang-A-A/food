@@ -22,6 +22,7 @@ import AboutIntro from '@/pages/AboutIntro'
 import AboutStory from '@/pages/AboutStory'
 import AboutHonors from '@/pages/AboutHonors'
 import AboutPoints from '@/pages/AboutPoints'
+import AboutWorkshop from '@/pages/AboutWorkshop'
 import Intents from '@/pages/Intents'
 import IntentTrash from '@/pages/IntentTrash'
 import Messages from '@/pages/Messages'
@@ -64,6 +65,7 @@ function App() {
         <Route path="about/story" element={<AboutStory />} />
         <Route path="about/honors" element={<AboutHonors />} />
         <Route path="about/selling-points" element={<AboutPoints />} />
+        <Route path="about/workshop" element={<AboutWorkshop />} />
         {/* 团购意向 / 意向回收站 / 消息 / 用户 / 管理员 / 部门 / 角色 */}
         <Route path="intents" element={<Intents />} />
         <Route path="intents/trash" element={<IntentTrash />} />

@@ -31,3 +31,6 @@ class About(TimestampMixin, Base):
     honors: Mapped[list] = mapped_column(JSON_TYPE, default=list, server_default="[]")
     # 卖点数组：[{title, desc, icon}, ...]（5 项，对应前台核心卖点区）
     selling_points: Mapped[list] = mapped_column(JSON_TYPE, default=list, server_default="[]")
+    # 工厂与工坊数组：[{title, desc, image}, ...]（2026-08-21 新增：
+    # 前台「工厂与工坊」卡片数据源，image 为后台上传的实景图 URL）
+    workshop: Mapped[list] = mapped_column(JSON_TYPE, default=list, server_default="[]")

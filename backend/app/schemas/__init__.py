@@ -350,11 +350,12 @@ class BannerOut(BaseModel):
 # ============================================================
 
 class AboutIn(BaseModel):
-    """关于我们更新：公司简介/品牌故事/荣誉/卖点（JSON 数组）。"""
+    """关于我们更新：公司简介/品牌故事/荣誉/卖点/工厂工坊（JSON 数组）。"""
     company_intro: str | None = None
     brand_story: str | None = None
     honors: list[dict] | None = None       # [{title, desc, icon}]
     selling_points: list[dict] | None = None  # [{title, desc, icon}]
+    workshop: list[dict] | None = None     # [{title, desc, image}] 工厂与工坊（2026-08-21）
 
 
 class AboutOut(BaseModel):
@@ -365,6 +366,7 @@ class AboutOut(BaseModel):
     brand_story: str | None = None
     honors: list = []
     selling_points: list = []
+    workshop: list = []
 
 
 # ============================================================

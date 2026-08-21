@@ -20,6 +20,7 @@ interface AboutData {
   brand_story: string | null
   honors: { title: string; desc: string; icon?: string }[]
   selling_points: { title: string; desc: string; icon: string }[]
+  workshop: { title: string; desc: string; image?: string | null }[]
 }
 
 export default function About() {
@@ -114,16 +115,24 @@ export default function About() {
           ))}
         </div>
 
-        {/* ===== 工厂与非遗工坊（MVP 静态占位，UI/UX §8.2 替换清单） ===== */}
+        {/* ===== 工厂与工坊（后台 workshop 数据源，2026-08-21 起可编辑） ===== */}
         <SectionTitle cn="工厂与工坊" en="Workshop" />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 18 }}>
-          {['中央工厂', '非遗糕点工坊', '技艺传承'].map((t, i) => (
-            <div key={t}>
-              <div className="art-frame" style={{ aspectRatio: '4/3', background: 'linear-gradient(165deg,#8C1F28,#5A1016)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <PalaceIcon style={{ width: '60%', opacity: .85 }} />
+          {(data?.workshop?.length ? data.workshop : [
+            { title: '中央工厂', desc: 'SC 认证洁净车间 · 全程品控', image: '' },
+            { title: '非遗糕点工坊', desc: '古法起酥 · 匠人手作', image: '' },
+            { title: '技艺传承', desc: '师徒相传 · 守护经典', image: '' },
+          ]).map((w) => (
+            <div key={w.title}>
+              <div className="art-frame" style={{ aspectRatio: '4/3', overflow: 'hidden', background: 'linear-gradient(165deg,#8C1F28,#5A1016)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {w.image ? (
+                  <img src={w.image} alt={w.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  <PalaceIcon style={{ width: '60%', opacity: .85 }} />
+                )}
               </div>
-              <div style={{ marginTop: 10, textAlign: 'center', fontFamily: 'var(--font-title)', fontSize: 15, color: 'var(--red-3)', letterSpacing: 2 }}>{t}</div>
-              <div style={{ marginTop: 4, textAlign: 'center', fontSize: 12, color: 'var(--text-weak)' }}>{['SC 认证洁净车间 · 全程品控', '古法起酥 · 匠人手作', '师徒相传 · 守护经典'][i]}（占位）</div>
+              <div style={{ marginTop: 10, textAlign: 'center', fontFamily: 'var(--font-title)', fontSize: 15, color: 'var(--red-3)', letterSpacing: 2 }}>{w.title}</div>
+              <div style={{ marginTop: 4, textAlign: 'center', fontSize: 12, color: 'var(--text-weak)' }}>{w.desc || '—'}</div>
             </div>
           ))}
         </div>
